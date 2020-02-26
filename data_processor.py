@@ -47,12 +47,12 @@ NUM_SAMPLES = (TMAX-TMIN)*(PMAX-PMIN)*(LATMAX-LATMIN)*(LONMAX-LONMIN)
 DEPTH = 3 # Number of neighbors to include in each sample (naive way to incorporate spatial and temporal dependence)
 SAMPLE_LEN = DEPTH**4*6
 TRAIN_SPLIT = .8 # 80% of samples used for training
+SCALING_FACTOR = 10**7
 
 class RawData(object): 
     def __init__(self, fileName, verbose=True):
         """
-        Import the raw CDF data, extracts relevant variables, stores them in a panda dataset, 
-        and new data to a folder. 
+        Imports raw CDF data from fileName and extracts variables in relevant window
         """
         VARIABLES = ['temp', 'hght', 'ucomp', 'vcomp', 'omega', 'level', 'gwfu_cgwd']
 
@@ -93,11 +93,20 @@ class RawData(object):
             
 class DataProcessor(object):
     def __init__(self, rawdata, save=True, verbose=True):
+        '''
+        Dataprocess 
+        1. Imports rawdata, 
+        2. Collects samples
+        3. Splits samples into training and test data,
+        4. Standardizes data
+        5. Saves data to csv files
+        '''
         self.rawdata = rawdata
 
         if verbose: print("Collect Samples")
         self.data, self.labels = self.collectSamples()
-        
+        self.labels = self.labels*SCALING_FACTOR
+
         if verbose: print("Split Data")
         self.train, self.test = np.split(self.data, [int(TRAIN_SPLIT*NUM_SAMPLES)], axis=0)
         self.train_labels, self.test_labels = np.split(self.labels, [int(TRAIN_SPLIT*NUM_SAMPLES)], axis=0)
@@ -107,12 +116,6 @@ class DataProcessor(object):
         self.train = scaler_features.fit_transform(self.train)
         self.test = scaler_features.transform(self.test)
 
-        # scaler_labels = StandardScaler()
-        # self.train_labels = self.train_labels
-        # self.test_labels = self.test_labels
-        # self.train_labels = scaler_labels.fit_transform(self.train_labels)
-        # self.test_labels = scaler_labels.transform(self.test_labels)
-        
         if save:
             if verbose: print("Save Processed Data")
             comment = "First 10 pressure levels. Standardized data across features. " + "Split: " + str(TRAIN_SPLIT) + "Depth: " + str(DEPTH)
@@ -123,6 +126,12 @@ class DataProcessor(object):
             np.savetxt('test_labels.csv', self.test_labels, delimiter=',')
 
     def collectSamples(self): 
+        '''
+        Returns data samples and corresponding training labels. 
+        Each sample contains temp, height, ucomp, vcomp, omega, and pressure at a 
+        lat,lon, pressure level, and time step, as well as those values for relevant neighbors. 
+        Each label contains a gwd value at the corresponding lat,lon, pressure level and time step. 
+        '''
         data = np.empty([NUM_SAMPLES, SAMPLE_LEN])
         labels = np.empty([NUM_SAMPLES, 1])
         for t in range(TMIN, TMAX):
@@ -135,6 +144,15 @@ class DataProcessor(object):
         return data, labels
 
     def createSample(self, t, p, lat, lon):
+        '''
+        Returns a single training sample. 
+        Includes nearest neighbors to depth determined by hyperparam
+        
+        :param t time: time step sample is centered on
+        :param p pressure level: pressure level sample is centered on
+        :param lat latitude: latitude sample is centered on
+        :param lon longitude: longitude sample is centered on
+        '''
         sample = [] 
         for loD in range(DEPTH):
             for laD in range(DEPTH):
@@ -150,7 +168,7 @@ class DataProcessor(object):
         return np.array(sample)
 
 """
-TEST DATAMODEL
+RUN DATAMODEL
 """
 fileName = "../../atmos_1day_d11160_plevel.nc"
 rawdata = RawData(fileName, verbose=True)

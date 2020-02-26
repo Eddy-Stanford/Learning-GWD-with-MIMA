@@ -16,6 +16,13 @@ class DataModel(object):
 
 class SimpleModel(): 
   def __init__(self, input_shape, save_path, verbose=True):
+    '''
+    Defines a simple keras neural network. 
+
+    :param Int input_shape: shape of input training data
+    :param Str save_path: Path to save network during training
+    :param Bool verbose: True to print network details
+    '''
     self.model = keras.Sequential([
       layers.Dense(128, activation='relu', input_shape=[input_shape]),
       layers.Dense(64, activation='relu'),
@@ -60,7 +67,6 @@ class SimpleModel():
 
   def evaluate(self, test, test_labels):
       loss, mae, mse = self.model.evaluate(test, test_labels, verbose=2)
-      # print("Testing set Mean Value: ", str(np.mean(test)))
       print("Testing set Mean Abs Error: " + str(mae) + "M/S^2")
 
 
@@ -74,10 +80,11 @@ fileNames = {
 epochs = 1000
 
 data = DataModel(fileNames)
+# Instantiate Model
 model = SimpleModel(input_shape=data.train.shape[1], save_path='./simple_model')
+# Train Model
 model.train(data.train, data.train_labels, epochs)
+# Plot Training Metrics
 model.plot_metrics()
+# Gives initial evaluation of network
 model.evaluate(data.test, data.test_labels)
-
-
-
