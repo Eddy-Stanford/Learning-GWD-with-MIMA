@@ -119,11 +119,11 @@ class DataProcessor(object):
         if save:
             if verbose: print("Save Processed Data")
             comment = "First 10 pressure levels. Standardized data across features. " + "Split: " + str(TRAIN_SPLIT) + "Depth: " + str(DEPTH)
-            np.savetxt('train_data.csv', self.train, delimiter=',', comments=comment)
-            np.savetxt('train_labels.csv', self.train_labels, delimiter=',')
+            np.savetxt('./data/train_data.csv', self.train, delimiter=',', comments=comment)
+            np.savetxt('./data/train_labels.csv', self.train_labels, delimiter=',')
 
-            np.savetxt('test_data.csv', self.test, delimiter=',')
-            np.savetxt('test_labels.csv', self.test_labels, delimiter=',')
+            np.savetxt('./data/test_data.csv', self.test, delimiter=',')
+            np.savetxt('./data/test_labels.csv', self.test_labels, delimiter=',')
 
     def collectSamples(self): 
         '''
