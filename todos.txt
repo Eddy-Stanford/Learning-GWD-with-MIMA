@@ -1,0 +1,4 @@
+1. Design pipeline for reading and writing batches of data, so that 
+    memory issues can be avoided
+2. Create file for constant values 
+3. Explore why model is over shooting low values and under shooting high values

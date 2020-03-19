@@ -7,11 +7,11 @@ import pandas as pd
 import tensorflow as tf
 
 # Load Test Data
-test = pd.read_csv('./test_data.csv', sep=',')
-test_labels = pd.read_csv('./test_labels.csv', sep=',')
+test = pd.read_csv('./data/test_data.csv', sep=',')
+test_labels = pd.read_csv('./data/test_labels.csv', sep=',')
 # Load Train Data
-train = pd.read_csv('./train_data.csv', sep=',')
-train_labels = pd.read_csv('./train_labels.csv', sep=',')
+train = pd.read_csv('./data/train_data.csv', sep=',')
+train_labels = pd.read_csv('./data/train_labels.csv', sep=',')
 
 # Load Model
 model = keras.models.load_model('./simple_model')
@@ -70,5 +70,5 @@ def prediction_vs_truth():
 
     plt.show()
 
-linear_p_vs_t()
-prediction_vs_truth()
+# linear_p_vs_t()
+# prediction_vs_truth()

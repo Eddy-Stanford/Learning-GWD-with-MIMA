@@ -71,10 +71,10 @@ class SimpleModel():
 
 
 fileNames = {
-  'train': './train_data.csv',
-  'train_labels': './train_labels.csv',
-  'test': './test_data.csv',
-  'test_labels': './test_labels.csv',
+  'train': './data/train_data.csv',
+  'train_labels': './data/train_labels.csv',
+  'test': './data/test_data.csv',
+  'test_labels': './data/test_labels.csv',
 }
 
 epochs = 1000
