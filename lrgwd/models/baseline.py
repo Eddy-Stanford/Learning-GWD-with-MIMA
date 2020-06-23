@@ -12,7 +12,7 @@ class BaseLine():
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
 
-    def build(self, input_shape=Tuple[int], output_shape=Tuple[int]):
+    def build(self, input_shape=Tuple[int], output_shape=Tuple[int], learning_rate=0.001):
         # Generate Layers
         inputs = self.add_input_layer(input_shape)
         hidden_layers = self.add_blocks(inputs)
@@ -20,11 +20,16 @@ class BaseLine():
 
         self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
+        # Optimizer
+        adam_optimizer = tf.keras.optimizers.Adam(
+            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
+        )
+
         # Compile
         self.model.compile(
             # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
             # RMSProp (reduces variation in steps)
-            optimizer='Adam',
+            optimizer=adam_optimizer,
             loss=tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
             metrics=[
                 # Fits to Median: robust to unwanted outliers
@@ -63,6 +68,7 @@ class BaseLine():
                 activation="relu", 
                 kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
             )(prev_layer)
+            
         
         return prev_layer
 

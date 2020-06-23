@@ -6,16 +6,24 @@ This repository creates an ML pipeline to learn gravity wave drag from MiMA data
 Getting Started
 ---------------
 
-Create virtualenv
-
+1. Create virtual environment
 ```sh
-$ pip install -U requirements.txt
+$ python -m venv env
 ```
+2. Clone repo into env
+```sh
+$ git clone https://github.com/zacespinosa/Learning-GWD-with-MIMA.git
+```
+3. Install `lrgwd`
+```sh
+$ pip install lrgwd 
+```
+4. Install depenencies as needed (I haven't got around to updating `setup.py` with all requirements yet)
 
 ## Pipeline Overview
 This outline does not list all flag for each command. To see all flags use `--help`.
 ```sh
-$ python lrgwd <ingestor> --help
+$ python lrgwd <command> --help
 $ python lrgwd --help
 ```
 
@@ -74,10 +82,10 @@ $ lrgwd train \
 Evaluates trained model and produces a performance report
 ```sh
 $ lrgwd evaluate \
-    --model <File Path to model to evaluate> \
-    --data <File Path to test dataset> \
-    --performance-report <File Path to save performance report>
+    --save-path <File Path to save performance report> \
+    --source-path <File Path to test and labels datasets> \
+    --model-path <File Path to trained model>
 ```
 
-## Model API
+## Fortran Adapter 
 This section outlines the api that Fortran will use to interact with this python model.

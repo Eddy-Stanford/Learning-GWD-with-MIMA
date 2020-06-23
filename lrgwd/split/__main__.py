@@ -59,6 +59,12 @@ from lrgwd.utils.tracking import tracking
     help="How much to scale gwfu and gwfv values by. Defaults to 1.0 (i.e. identity)"
 )
 @click.option(
+    "--num-samples",
+    default=None,
+    show_default=True,
+    help="Number of samples to take from extracted vectors. If None, use all"
+)
+@click.option(
     "--batch-size",
     default=DEFAULTS["batch_size"],
     show_default=True,
@@ -79,11 +85,15 @@ def main(**params):
        local_dir=params["save_path"],
        tracking=params["tracking"]
     ):
-        num_samples = get_num_samples(params["source_path"])
+        os.makedirs(params["save_path"], exist_ok=True)
+
+        if params["num_samples"] is None: 
+            num_samples = int(get_num_samples(params["source_path"]))
+        else: 
+            num_samples = int(params["num_samples"])
+
         if params["verbose"]:
             logger.debug(f"Splitting {num_samples} samples")
-
-        os.makedirs(params["save_path"], exist_ok=True)
 
         split(
             num_samples=num_samples,

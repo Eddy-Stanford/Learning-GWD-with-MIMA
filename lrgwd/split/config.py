@@ -3,7 +3,7 @@ DEFAULTS = {
     "source_path": "./runs/dev/extracted",
     "test_split": .10,
     "val_split": .05,
-    "batch_size": 10000,
+    "batch_size": 100000,
 }
 
 TRAIN_TENSORS_FN = "train_tensors.csv"

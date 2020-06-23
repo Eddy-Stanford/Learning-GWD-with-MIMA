@@ -3,6 +3,8 @@ from typing import Any, Union
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
+
 from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
 from lrgwd.split.config import (TEST_GWFU_FN, TEST_GWFV_FN, TEST_LABELS_FN,
                                 TEST_TENSORS_FN, TRAIN_GWFU_FN, TRAIN_GWFV_FN,
@@ -123,15 +125,14 @@ def split(
     batch_size = min([num_test_samples, num_val_samples, batch_size])
 
     num_read = 0
-    for tensor_chunk, gwfu_chunk, gwfv_chunk, labels_chunk in zip(
+    for tensor_chunk, gwfu_chunk, gwfv_chunk, labels_chunk in tqdm(zip(
         pd.read_csv(tensors_path, chunksize=batch_size),
         pd.read_csv(gwfu_path, chunksize=batch_size),
         pd.read_csv(gwfv_path, chunksize=batch_size),
         pd.read_csv(labels_path, chunksize=batch_size),
-    ):
+    ), "splitting"):
         # TODO: Consider shuffling chunk and presplitting. Then saving to all three split
         # Doing so would make split datasets more representative of entire dataset
-
         if num_read < num_train_samples:
             splitter.save_train(
                 tensors=tensor_chunk,
@@ -160,5 +161,7 @@ def split(
             )
         
         num_read += batch_size
+
+        if num_read >= num_samples: break
 
     preprocessor.save()
