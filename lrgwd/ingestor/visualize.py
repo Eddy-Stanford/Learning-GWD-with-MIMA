@@ -1,14 +1,13 @@
 import os
 from typing import Any, Dict, Union
 
-import seaborn as sns 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+from lrgwd.ingestor.config import NUM_SAMPLES_FOR_SCATTER
+from lrgwd.utils.data_operations import is_outlier
 from matplotlib import colors
 from matplotlib.ticker import FormatStrFormatter, PercentFormatter
-
-from lrgwd.utils.data_operations import is_outlier
-from lrgwd.ingestor.config import NUM_SAMPLES_FOR_SCATTER
 
 
 def plot_scatter(

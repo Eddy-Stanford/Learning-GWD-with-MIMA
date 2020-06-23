@@ -1,24 +1,21 @@
 import os
 from typing import Any, Tuple, Union
 
-import pandas as pd 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
-from tensorflow.keras import utils
-from sklearn.utils import shuffle
-from tensorflow.keras.callbacks import (
-    EarlyStopping, 
-    CSVLogger, # Check if needed when using TensorBoard
-    ReduceLROnPlateau, 
-    ModelCheckpoint,
-    TensorBoard,
-    TerminateOnNaN, # Check if needed
-)
-
 from lrgwd.models.baseline import BaseLine
 from lrgwd.models.config import VALID_MODELS
-from lrgwd.utils.io import from_pickle
 from lrgwd.train.config import MONITOR_METRIC
+from lrgwd.utils.io import from_pickle
+from sklearn.utils import shuffle
+from tensorflow.keras import utils
+from tensorflow.keras.callbacks import \
+    CSVLogger  # Check if needed when using TensorBoard
+from tensorflow.keras.callbacks import TerminateOnNaN  # Check if needed
+from tensorflow.keras.callbacks import (EarlyStopping, ModelCheckpoint,
+                                        ReduceLROnPlateau, TensorBoard)
+
 
 # TODO: Rewrite so this does not depend on string literals (i.e. baseline)
 def get_model(model: str):
@@ -37,6 +34,7 @@ def get_metadata(source_path: Union[os.PathLike, str]):
 
 
 def get_callbacks(save_path: Union[os.PathLike, str]):
+    os.makedirs(os.path.join(save_path, "checkpoints"))
     return [
         EarlyStopping(
             monitor=MONITOR_METRIC, patience=10, restore_best_weights=True,
@@ -48,7 +46,7 @@ def get_callbacks(save_path: Union[os.PathLike, str]):
             monitor=MONITOR_METRIC, factor=0.1, patience=5, verbose=1, mode='min',
         ),
         ModelCheckpoint(
-            filepath=os.path.join(save_path, "checkpoints"),
+            filepath=os.path.join(save_path, "checkpoints/weights.{epoch:02d}.hdf5"),
             save_best_only=False,
             save_weights_only=True,
             monitor=MONITOR_METRIC,

@@ -3,7 +3,6 @@ from typing import Any, Dict
 import numpy as np
 
 
-
 def generate_metrics(feat: str, cdf_variable) -> Dict[str, Any]:
     data = cdf_variable[:]
     valid_range = ""
@@ -25,5 +24,3 @@ def generate_metrics(feat: str, cdf_variable) -> Dict[str, Any]:
     }
 
     return feat_info
-
-

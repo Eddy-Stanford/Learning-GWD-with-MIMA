@@ -9,15 +9,13 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from lrgwd.extractor.config import DEFAULTS
+from lrgwd.extractor.utils import Data, extract_3D_tensors, extract_tensors
+from lrgwd.utils.logger import logger
+from lrgwd.utils.tracking import tracking
 from matplotlib.ticker import FormatStrFormatter
 from scipy.stats import pearsonr, spearmanr
 from tqdm import tqdm
-
-
-from lrgwd.utils.logger import logger
-from lrgwd.utils.tracking import tracking
-from lrgwd.extractor.config import DEFAULTS
-from lrgwd.extractor.utils import extract_3D_tensors, extract_tensors, Data
 
 
 @click.command("extractor")

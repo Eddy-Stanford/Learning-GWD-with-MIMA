@@ -1,18 +1,18 @@
 import os
+from collections import defaultdict
 
 import click
 import numpy as np
-from collections import defaultdict
-from scipy.io import netcdf
-
-from lrgwd.utils.logger import logger
-from lrgwd.utils.tracking import tracking
-from lrgwd.utils.io import to_json
 from lrgwd.config import FEATURES, NON_ZERO_GWD_PLEVELS
 from lrgwd.ingestor.config import DEFAULTS
 from lrgwd.ingestor.utils import generate_metrics
-from lrgwd.ingestor.visualize import plot_scatter, plot_distribution, plot_distribution_per_level
-
+from lrgwd.ingestor.visualize import (plot_distribution,
+                                      plot_distribution_per_level,
+                                      plot_scatter)
+from lrgwd.utils.io import to_json
+from lrgwd.utils.logger import logger
+from lrgwd.utils.tracking import tracking
+from scipy.io import netcdf
 
 
 @click.command("ingestor")

@@ -1,4 +1,6 @@
-import coloredlogs, logging
+import logging
+
+import coloredlogs
 
 logger = logging.getLogger("lrgwd")
 logger.setLevel(logging.INFO)

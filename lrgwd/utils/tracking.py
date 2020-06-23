@@ -1,11 +1,10 @@
 import os
 import traceback
-from typing import Any, Dict, Union
 from contextlib import contextmanager
+from typing import Any, Dict, Union
 
 import mlflow
-
-from lrgwd.utils.logger import logger 
+from lrgwd.utils.logger import logger
 
 
 @contextmanager
@@ -31,4 +30,3 @@ def tracking(
                 
     if local_dir and tracking:
         mlflow.log_artifact(local_dir, artifact_path)
-            

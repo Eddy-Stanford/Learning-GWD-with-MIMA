@@ -1,11 +1,10 @@
 from typing import List, Tuple
 
-import tensorflow as tf
-from tensorflow.keras.layers import Dense
 import numpy as np
-
-from lrgwd.models.config import BLOCK_PARAMS 
+import tensorflow as tf
 from lrgwd.config import NON_ZERO_GWD_PLEVELS
+from lrgwd.models.config import BLOCK_PARAMS
+from tensorflow.keras.layers import Dense
 
 tf.autograph.set_verbosity(3, True)
 

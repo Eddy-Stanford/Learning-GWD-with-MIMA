@@ -1,26 +1,15 @@
 import os
 from typing import Any, Union
 
+import numpy as np
 import pandas as pd
-import numpy as np 
-
-from lrgwd.extractor.config import TENSORS_FN, GWFU_FN, GWFV_FN, LABELS_FN
-from lrgwd.split.config import (
-    TRAIN_TENSORS_FN,
-    TRAIN_LABELS_FN,
-    TRAIN_GWFU_FN,
-    TRAIN_GWFV_FN,
-    VAL_TENSORS_FN,
-    VAL_GWFU_FN,
-    VAL_GWFV_FN,
-    VAL_LABELS_FN,
-    TEST_TENSORS_FN,
-    TEST_GWFU_FN,
-    TEST_GWFV_FN,
-    TEST_LABELS_FN,
-)
+from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
+from lrgwd.split.config import (TEST_GWFU_FN, TEST_GWFV_FN, TEST_LABELS_FN,
+                                TEST_TENSORS_FN, TRAIN_GWFU_FN, TRAIN_GWFV_FN,
+                                TRAIN_LABELS_FN, TRAIN_TENSORS_FN, VAL_GWFU_FN,
+                                VAL_GWFV_FN, VAL_LABELS_FN, VAL_TENSORS_FN)
 from lrgwd.split.preprocess import Preprocessor
-from lrgwd.utils.io import to_pickle, from_pickle
+from lrgwd.utils.io import from_pickle, to_pickle
 
 
 class Splitter():

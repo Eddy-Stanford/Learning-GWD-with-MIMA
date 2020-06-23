@@ -1,19 +1,14 @@
 import sys
 
 import click
-
-from lrgwd.ingestor.__main__ import main as ingestor
 from lrgwd.extractor.__main__ import main as extractor
+from lrgwd.ingestor.__main__ import main as ingestor
 from lrgwd.split.__main__ import main as split
 from lrgwd.train.__main__ import main as train
 
 
 @click.group()
 def main():
-    pass
-
-@main.group()
-def aggregate():
     pass
 
 

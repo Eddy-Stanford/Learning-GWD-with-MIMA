@@ -1,10 +1,10 @@
 import os
+from pickle import dump
 from typing import Union
 
 import numpy as np
-import pandas as pd 
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from pickle import dump
 
 
 class Preprocessor():

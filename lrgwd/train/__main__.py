@@ -1,12 +1,12 @@
 import os
 
 import click
-
+from lrgwd.train.config import DEFAULTS
+from lrgwd.train.utils import (DataGenerator, get_callbacks, get_metadata,
+                               get_model)
+from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
-from lrgwd.utils.io import from_pickle
-from lrgwd.train.config import DEFAULTS
-from lrgwd.train.utils import get_model, get_metadata, get_callbacks, DataGenerator
 
 
 @click.command("train")

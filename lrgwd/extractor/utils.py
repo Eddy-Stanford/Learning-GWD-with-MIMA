@@ -3,12 +3,12 @@ from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
-
-from lrgwd.config import TARGET_FEATURES, TRAIN_FEATURES, TENSOR, NON_ZERO_GWD_PLEVELS
+from lrgwd.config import (NON_ZERO_GWD_PLEVELS, TARGET_FEATURES, TENSOR,
+                          TRAIN_FEATURES)
 from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
-from lrgwd.utils.logger import logger
 from lrgwd.utils.io import to_pickle
+from lrgwd.utils.logger import logger
+from tqdm import tqdm
 
 
 class Data(object):

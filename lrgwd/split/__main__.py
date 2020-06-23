@@ -1,17 +1,16 @@
-import os
 import csv
+import os
 from typing import Union
 
-import click 
+import click
 import numpy as np
 import pandas as pd
-
-from lrgwd.utils.tracking import tracking
-from lrgwd.utils.logger import logger
-from lrgwd.utils.io import from_pickle
-from lrgwd.split.config import DEFAULTS
 from lrgwd.extractor.config import TENSORS_FN
+from lrgwd.split.config import DEFAULTS
 from lrgwd.split.split import split
+from lrgwd.utils.io import from_pickle
+from lrgwd.utils.logger import logger
+from lrgwd.utils.tracking import tracking
 
 
 @click.command("split")
@@ -106,5 +105,3 @@ def get_num_samples(
     """
     metadata = from_pickle(os.path.join(source_path, "metadata.pkl"))
     return metadata["total_samples"]
-
-    

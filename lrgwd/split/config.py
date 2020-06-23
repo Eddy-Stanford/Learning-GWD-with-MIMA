@@ -3,7 +3,7 @@ DEFAULTS = {
     "source_path": "./runs/dev/extracted",
     "test_split": .10,
     "val_split": .05,
-    "batch_size": 100,
+    "batch_size": 10000,
 }
 
 TRAIN_TENSORS_FN = "train_tensors.csv"
@@ -23,4 +23,3 @@ VAL_GWFU_FN = "val_gwfu.csv"
 
 TEST_GWFV_FN = "test_gwfv.csv"
 TEST_GWFU_FN = "test_gwfu.csv"
-
