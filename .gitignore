@@ -1,0 +1,7 @@
+/mlruns/*
+/runs/*
+.pre-commit-config.yaml
+/.vscode/*
+/__pycache__/*
+/lrgwd.egg-info/
+/lrgwd/train/__pycache__/*
