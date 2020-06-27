@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lrgwd.extractor.config import DEFAULTS
-from lrgwd.extractor.utils import Data, extract_3D_tensors, extract_tensors
+from lrgwd.extractor.utils import (Data, extract_3D_tensors, extract_tensors,
+                                   vectorized_extract_tensors)
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
 from matplotlib.ticker import FormatStrFormatter
@@ -82,13 +83,6 @@ from tqdm import tqdm
     show_default=True,
     help="Track run using mlflow"
 )
-@click.option(
-    "--batch-size",
-    default=DEFAULTS["batch_size"],
-    show_default=True,
-    type=int,
-    help="Number of feature vectors to process before writing"
-)
 @click.option("--verbose/--no-verbose", default=True)
 def main(**params):
     """
@@ -101,11 +95,7 @@ def main(**params):
         tracking=params["tracking"]
     ):
         with np.load(params["source_path"], allow_pickle=False) as npz_data:
-            # Memory Load data
-            if params["verbose"]:
-                logger.info(f"Memory Loading Data")
-
-            data = Data(dict(npz_data))
+            data = Data(npz_data)
             os.makedirs(params["save_path"], exist_ok=True)
 
             # Create FEATURE TENSORS
@@ -122,13 +112,14 @@ def main(**params):
                     num_samples=params["num_samples"],
                 )
             else: 
-                extract_tensors(
+                vectorized_extract_tensors(
                     data=data,
                     save_path=params["save_path"],
                     num_samples=params["num_samples"],
                     plevels=params["plevels_included"],
-                    batch_size=params["batch_size"]
+                    verbose=params["verbose"],
                 )
+
 
 
 if __name__ == "__main__":
@@ -137,7 +128,7 @@ if __name__ == "__main__":
 
 
 
-
+########### LEGACY CODE FOR FINDING CORRELATIONS BETWEEN INDEPENDENT AND DEPENDENT VARS ############
 # if params["correlations"]:
 #     logging.info(f"Find and plot spearman correlation")
 #     generate_temporal_correlation_plots(

@@ -2,7 +2,7 @@ DEFAULTS = {
     "save_path": "./runs/dev/train",
     "source_path": "./runs/dev/split",
     "batch_size": 256,
-    "chunk_size": 10000,
+    "chunk_size": 100000,
     "model": "baseline",
     "target": "gwfu",
     "epochs": 10,

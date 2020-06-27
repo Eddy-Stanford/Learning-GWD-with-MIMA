@@ -30,7 +30,7 @@ class BaseLine():
             # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
             # RMSProp (reduces variation in steps)
             optimizer=adam_optimizer,
-            loss=tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
+            loss=tf.keras.losses.MeanSquaredError(),
             metrics=[
                 # Fits to Median: robust to unwanted outliers
                 tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
@@ -68,7 +68,7 @@ class BaseLine():
                 activation="relu", 
                 kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
             )(prev_layer)
-            
+
         
         return prev_layer
 

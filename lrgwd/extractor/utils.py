@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 class Data(object):
     def __init__(self, data):
-        self.raw_data = data
+        self.npz_data = data
         self.data_shape = data["gwfu_cgwd"].shape
         self.time = self.data_shape[0]
         self.plevels = self.data_shape[1]
@@ -21,6 +21,88 @@ class Data(object):
         self.lon = self.data_shape[3]
 
 
+def vectorized_extract_tensors(
+    data: Data,
+    save_path: Union[os.PathLike, str],
+    num_samples: Union[int, None],
+    plevels: int,
+    verbose: bool = True,
+) -> None:
+    """
+    NOTE: This is far more efficient than `extract_tensors` and solves previous speed issues. 
+
+    Extracts feature tensors and target columns from raw data.
+
+    Arguments:
+    ----------
+    data (Data): npz data 
+    save_path (Union[os.PathLike, str]): path to save all files
+    num_samples (Union[int, None]): number of samples to extract from data. 
+        If None, extracts all samples.
+    plevels (int): number of pressure levels to include in tensors. 
+        Use to ignore low altitude pressure levels
+    verbose (bool)
+    """
+    npz_data = data.npz_data
+    total_num_samples = data.time*data.lat*data.lon
+
+    if num_samples == None or num_samples > total_num_samples:
+        logger.warning(f"Extracting all possible samples {total_num_samples}")
+        num_samples = total_num_samples
+
+    # Save Metadata
+    to_pickle(
+        path=os.path.join(save_path, "metadata.pkl"),
+        obj={
+            "total_samples": num_samples,
+            "input_shape": ((len(TRAIN_FEATURES) - 1)*plevels + 1, ),
+            "output_shape": (NON_ZERO_GWD_PLEVELS,)
+        }
+    )
+
+    idx = np.random.choice(np.arange(total_num_samples), num_samples, replace=False)
+
+    paste_command = f"paste "
+    for feat in TENSOR:
+        # Memory Load Feature
+        if verbose: logger.info(f"Memory Loading {feat}")
+        feat_data = np.array(npz_data[feat])
+
+        # Extract Feature
+        if verbose: logger.info(f"Extracting {feat}")
+        if feat == "slp": 
+            # Flatten time, lat, lon dimensions
+            feat_data = np.stack(feat_data)
+            feat_data = feat_data.reshape(1, total_num_samples)
+        else:
+            # Flatten time, lat, lon dimensions while preserving vertical columns
+            feat_data = np.stack(feat_data[:,:plevels,:,:], axis=1)
+            feat_data = feat_data.reshape(plevels, total_num_samples)
+        # Sample & Shuffle
+        feat_data = feat_data[:, idx].T
+
+        if feat in TRAIN_FEATURES:
+            feat_label = feat
+            paste_command += os.path.join(save_path, f"{feat}.csv ")
+        elif feat in TARGET_FEATURES:
+            if feat == "gwfu_cgwd":
+                feat_label = "gwfu"
+            else: 
+                feat_label = "gwfv"
+        else: 
+            logger.warning("Unused attribute")
+            continue
+
+        with open(os.path.join(save_path, f"{feat_label}.csv"), 'a+') as f:
+            np.savetxt(f,feat_data, header="", delimiter=',')
+
+    logger.info(f"Pasting files together {paste_command}")
+    os.system(paste_command + " -d ',' > " + os.path.join(save_path, "tensors.csv"))
+    
+            
+
+######################### KEEP FOR REFERENCE ##############################
+######################### LEGACY CODE #####################################
 def extract_tensors(
     data: Data,
     save_path: Union[os.PathLike, str],
@@ -141,7 +223,8 @@ def save_batch(
     targets_gwfu.T.to_csv(gwfu_path, mode='a', header=include_header, index=False)
     targets_gwfv.T.to_csv(gwfv_path, mode='a', header=include_header, index=False)
     labels.T.to_csv(labels_path, mode="a", header=include_header, index=False)
-
+######################### KEEP FOR REFERENCE ##############################
+######################### LEGACY CODE #####################################
 
 
 def extract_3D_tensors(
@@ -153,6 +236,6 @@ def extract_3D_tensors(
     num_samples: Union[int, None],
 ) -> None: 
     """
-    TODO: IMPLEMENT
+    TODO: ONLY IMPLEMENT IF USING 1D TENSORS UNDERPERFORMS
     """
     pass

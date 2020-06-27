@@ -24,6 +24,7 @@ def get_model(model: str):
     else: 
         raise Exception("In valid model. Pick one of: f{VALID_MODELS}")
 
+
 def get_metadata(source_path: Union[os.PathLike, str]):
     """
     Gets metadata from source_path
@@ -34,7 +35,6 @@ def get_metadata(source_path: Union[os.PathLike, str]):
 
 
 def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baseline"):
-    os.makedirs(os.path.join(save_path, "checkpoints"), exist_ok=True)
     return [
         EarlyStopping(
             monitor=MONITOR_METRIC, patience=10, restore_best_weights=True,
@@ -43,11 +43,11 @@ def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baselin
             os.path.join(save_path, "training.log"), separator=',', append=False
         ),
         ReduceLROnPlateau(
-            monitor=MONITOR_METRIC, factor=0.1, patience=8, verbose=1, mode='min',
+            monitor=MONITOR_METRIC, factor=0.1, patience=5, verbose=1, mode='min',
         ),
         ModelCheckpoint(
-            filepath=os.path.join(save_path, f"checkpoints/{model_name}" + ".{epoch:02d}.hdf5"),
-            save_best_only=False,
+            filepath=os.path.join(save_path, f"{model_name}" + ".{epoch:02d}.hdf5"),
+            save_best_only=True,
             monitor=MONITOR_METRIC,
             mode="min",
             save_freq='epoch', 
@@ -94,16 +94,16 @@ class DataGenerator(utils.Sequence):
 
     def _get_batch(self):
         for tensors_chunk, target_chunk in zip(
-            pd.read_csv(self.tensors_filepath, chunksize=self.chunk_size),
-            pd.read_csv(self.target_filepath, chunksize=self.chunk_size)
+            pd.read_csv(self.tensors_filepath, header=None, chunksize=self.chunk_size),
+            pd.read_csv(self.target_filepath, header=None, chunksize=self.chunk_size)
         ):
             # create batch from chunk 
             tensors_chunk, target_chunk = (tensors_chunk.to_numpy(), target_chunk.to_numpy())
             # standardize chunk
             tensors_chunk = self.tensors_scaler.transform(tensors_chunk)
-            # target_chunk  = self.target_scaler.transform(target_chunk)
-            # import pdb
-            # pdb.set_trace()
+            # target_chunk = target_chunk*(10**7)
+            target_chunk  = self.target_scaler.transform(target_chunk)
+
             # convert to tf Dataset
             train_dataset = tf.data.Dataset.from_tensor_slices((tensors_chunk, target_chunk)).repeat()
             

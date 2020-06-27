@@ -1,7 +1,6 @@
 DEFAULTS = {
     "save_path": "./runs/dev/extracted",
     "source_path": "./runs/dev/ingested/raw_data.npz",
-    "batch_size": 10000, 
     "CNN_features": {
         "step_size": 1,
         "start_time": 1,

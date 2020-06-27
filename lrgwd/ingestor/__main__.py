@@ -61,14 +61,13 @@ def main(**params):
             # Convert CDF File to NPZ File
             if params["convert"]:
                 if params['verbose']: 
-                    logger.info(f"Saving Files")
+                    logger.info(f"Converting CDF to NPZ (this may take a few minutes)")
 
-                # Convert from float32 to float16 to reduce memory usage.
-                # TODO: CONVERTING INF TO finfo.max IS ONLY FOR HGHT AND SHOULD BE REEVALUATED FOR EACH NEW FEATURE
+                # Convert from float32 to float16 for all varaibles except gwfu, gwfv and hght to reduce memory usage (extra precision unnecessary)
                 feats = defaultdict(str)
                 for feat in FEATURES:
-                    feat_data = np.float16(cdf_data.variables[feat][:])
-                    if feat != "hght":
+                    feat_data = cdf_data.variables[feat][:]
+                    if feat not in ["hght", "gwfu_cgwd", "gwfv_cgwd"]:
                         feat_data = np.float16(feat_data)
                     feats[feat] = feat_data
                 np.savez_compressed(
@@ -80,6 +79,7 @@ def main(**params):
             # Create histograms and compute useful metrics
             feat_info = {}
             if params["visualize"]:
+                if params["verbose"]: logger.info("Visualizing data distributions")
                 for feat in FEATURES:
                     if params["verbose"]: logger.info(f"Plot {feat}")
                     feat_info[feat] = generate_metrics(feat, cdf_data.variables[feat])
