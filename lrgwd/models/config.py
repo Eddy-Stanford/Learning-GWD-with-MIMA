@@ -1,9 +1,8 @@
 BLOCK_PARAMS = {
-    "num_blocks": 1,
-    "layers_in_block": 1,
+    "layers_in_block": 2,
     "activation": "relu",
-    "units": [64], #,64,128,128,256],
-    "units_in_plevel_hidden_layers": 16
+    "units": [256, 256], 
+    "units_in_plevel_hidden_layers": [256, 128, 64, 32],
 }
 
 VALID_MODELS = ["baseline"]

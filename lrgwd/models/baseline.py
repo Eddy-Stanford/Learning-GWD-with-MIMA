@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 from lrgwd.config import NON_ZERO_GWD_PLEVELS
 from lrgwd.models.config import BLOCK_PARAMS
-from tensorflow.keras.layers import Dense
+from tensorflow.keras import regularizers
+from tensorflow.keras.layers import Dense, Dropout
 
 tf.autograph.set_verbosity(3, True)
 
@@ -30,7 +31,26 @@ class BaseLine():
             # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
             # RMSProp (reduces variation in steps)
             optimizer=adam_optimizer,
-            loss=tf.keras.losses.MeanSquaredError(),
+            loss=[
+                tf.keras.losses.MeanAbsoluteError(), # 0
+                tf.keras.losses.MeanAbsoluteError(), # 1
+                tf.keras.losses.MeanAbsoluteError(), # 2
+                tf.keras.losses.MeanAbsoluteError(), # 3
+                tf.keras.losses.MeanAbsoluteError(), # 4
+                tf.keras.losses.MeanAbsoluteError(), # 5
+                tf.keras.losses.MeanAbsoluteError(), # 6
+                tf.keras.losses.MeanAbsoluteError(), # 7
+                tf.keras.losses.MeanAbsoluteError(), # 8
+                tf.keras.losses.MeanAbsoluteError(), # 9
+                tf.keras.losses.MeanAbsoluteError(), # 10
+                tf.keras.losses.MeanAbsoluteError(), # 11
+                tf.keras.losses.MeanAbsoluteError(), # 12
+                tf.keras.losses.MeanAbsoluteError(), # 13
+                tf.keras.losses.MeanAbsoluteError(), # 14
+                tf.keras.losses.MeanAbsoluteError(), # 15
+                tf.keras.losses.MeanAbsoluteError(), # 16
+                tf.keras.losses.MeanAbsoluteError(), # 17
+            ],
             metrics=[
                 # Fits to Median: robust to unwanted outliers
                 tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
@@ -66,8 +86,10 @@ class BaseLine():
             prev_layer = Dense(
                 units,  
                 activation="relu", 
+                kernel_regularizer=regularizers.l2(0.001),
                 kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
             )(prev_layer)
+            prev_layer = Dropout(0.3)(prev_layer)
 
         
         return prev_layer
@@ -78,16 +100,23 @@ class BaseLine():
         hidden_layers: Dense
     ) -> List[Dense]:
         output_layers = []
+        plevel_specific = hidden_layers
         for i in range(NON_ZERO_GWD_PLEVELS): 
             # Create PLEVEL specific hidden layer
-            plevel_specific = Dense(
-                units=BLOCK_PARAMS["units_in_plevel_hidden_layers"],
-                activation="relu",
-                kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
-                name=f"plevel_specific_{i}"
-            )(hidden_layers)
+            for j, units in enumerate(BLOCK_PARAMS["units_in_plevel_hidden_layers"]):
+                plevel_specific = Dense(
+                    units=units,
+                    kernel_regularizer=regularizers.l2(0.001),
+                    activation="relu",
+                    kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
+                    name=f"plevel_{i}_layer_{j}"
+                )(plevel_specific)
+                if j != (len(BLOCK_PARAMS["units_in_plevel_hidden_layers"]) - 1):
+                    plevel_specific = Dropout(0.3)(plevel_specific)
+                
 
             # Create Output layer
             output_layers.append(Dense(units=1, name=f"output_{i}")(plevel_specific))
-        
+            plevel_specific = hidden_layers 
+
         return output_layers

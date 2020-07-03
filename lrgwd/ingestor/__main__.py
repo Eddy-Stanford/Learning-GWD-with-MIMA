@@ -67,7 +67,7 @@ def main(**params):
                 feats = defaultdict(str)
                 for feat in FEATURES:
                     feat_data = cdf_data.variables[feat][:]
-                    if feat not in ["hght", "gwfu_cgwd", "gwfv_cgwd"]:
+                    if feat not in ["hght", "gwfu_cgwd", "gwfv_cgwd", "vcomp", "ucomp", "omega"]:
                         feat_data = np.float16(feat_data)
                     feats[feat] = feat_data
                 np.savez_compressed(

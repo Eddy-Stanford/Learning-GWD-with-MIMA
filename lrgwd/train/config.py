@@ -12,4 +12,4 @@ DEFAULTS = {
     "learning_rate": .0001,
 }
 
-MONITOR_METRIC = "output_9_loss"
+MONITOR_METRIC = "loss"

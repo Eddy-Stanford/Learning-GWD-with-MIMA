@@ -9,28 +9,78 @@ import pandas as pd
 from lrgwd.utils.io import from_pickle, to_pickle
 from sklearn.metrics import mean_absolute_error
 
+from lrgwd.utils.data_operations import is_outlier
+from lrgwd.utils.logger import logger
 
 class EvaluationPackage(object):
     def __init__(self, test_tensors, test_targets, tensors_scaler, target_scaler):
         self.test_tensors = test_tensors
         self.test_targets = test_targets
-        # self.test_labels = test_labels
         self.test_labels = None
         self.tensors_scaler = tensors_scaler
         self.target_scaler = target_scaler 
 
+    def predict(self, model, outliers):
+        test_predictions = model.predict(self.test_tensors)
+        test_predictions = np.hstack(test_predictions)
+        self.raw_test_predictions = self.target_scaler.inverse_transform(test_predictions)
+
+        # Split predictions per level 
+        num_plevels = self.raw_test_predictions[0].shape[0]
+        self.predictions = {}
+        self.targets = {}
+        for i in range(num_plevels):
+            plevel_predictions = self.raw_test_predictions[:, i]
+            plevel_targets = self.test_targets[:, i]
+
+            # Remove Outliers
+            if outliers is not None:
+                plevel_predictions, plevel_targets = self.remove_outliers(
+                    predictions=plevel_predictions,
+                    targets=plevel_targets,
+                    outliers=float(outliers),
+                )
+
+            self.predictions[f"plevel_{i}"] = plevel_predictions
+            self.targets[f"plevel_{i}"] = plevel_targets
+
+
+    def remove_outliers(self, 
+        predictions: np.ndarray,
+        targets: np.ndarray,
+        outliers: float
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        target_outliers = is_outlier(targets, thresh=outliers)
+        predictions = predictions[~target_outliers]
+        targets = targets[~target_outliers]
+
+        prediction_outliers = is_outlier(predictions, thresh=outliers)
+        predictions = predictions[~prediction_outliers]
+        targets = targets[~prediction_outliers]
+
+        return (predictions, targets)
+
 
 def generate_evaluation_package(
     source_path: Union[os.PathLike, str],
+    num_samples: Union[None, float],
     target: str,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    test_tensors_fp = os.path.join(source_path, "test_tensors.csv")
-    test_targets_fp = os.path.join(source_path, f"test_{target}.csv")
-    # test_labels_fp = os.path.join(source_path, f"test_labels.csv")
+    test_tensors_fp = os.path.join(source_path, "train_tensors.csv")
+    test_targets_fp = os.path.join(source_path, f"train_{target}.csv")
 
-    test_tensors = pd.read_csv(test_tensors_fp).to_numpy()
-    test_targets = pd.read_csv(test_targets_fp).to_numpy()
-    # test_labels = pd.read_csv(test_labels_fp).to_numpy()
+
+    if num_samples is None: 
+        test_targets = pd.read_csv(test_targets_fp).to_numpy()
+        test_tensors = pd.read_csv(test_tensors_fp).to_numpy()
+    else: 
+        for test_tensors, test_targets in zip(
+            pd.read_csv(test_tensors_fp, chunksize=num_samples), 
+            pd.read_csv(test_targets_fp, chunksize=num_samples), 
+        ):
+            test_tensors = test_tensors.to_numpy()
+            test_targets = test_targets.to_numpy()
+            break
 
     # Transform Targets
     tensors_scaler_fp = os.path.join(source_path, "tensors_scaler.pkl")
@@ -40,10 +90,10 @@ def generate_evaluation_package(
     target_scaler_fp = os.path.join(source_path, f"{target}_scaler.pkl")
     target_scaler = from_pickle(target_scaler_fp)
 
+
     return EvaluationPackage(
         test_tensors=test_tensors,
         test_targets=test_targets,
-        # test_labels=test_labels,
         tensors_scaler=tensors_scaler,
         target_scaler=target_scaler,
     )
@@ -52,7 +102,6 @@ def generate_evaluation_package(
 def generate_metrics(
     test_predictions: np.ndarray, 
     test_targets: np.ndarray,
-    test_labels: np.ndarray,
     save_path: Union[os.PathLike, str]
 ) -> None:
     # Pressure Level Specific Metrics
@@ -102,6 +151,7 @@ def plot_metrics(metrics: Dict[str, np.ndarray], save_path: Union[os.PathLike, s
     
     fig.legend()
     fig.savefig(os.path.join(save_path, "metrics.png"))
+    plt.close(fig)
 
 
 def plot_numberline(
@@ -119,7 +169,6 @@ def plot_numberline(
         labels = list(metrics.keys())
     for i in range(len(x)):
         ax.scatter(x[i], y[i], c=colors[i], label=labels[i])
-
 
 
 # Setup a plot such that only the bottom spine is shown
@@ -142,14 +191,15 @@ def plot_predictions_vs_truth_per_level(
     predictions: np.ndarray, 
     targets: np.ndarray,
     title: str,
+    color: str,
     save_path: Union[os.PathLike, str],
 ): 
     minlim = np.min([np.min(predictions), np.min(targets)])
-    maxlim = np.max([np.max(predictions), np.max(targets)])
+    maxlim = np.max([np.max(targets), np.max(predictions)])
 
     fig = plt.figure()
     _ = plt.axes(aspect="equal")
-    plt.scatter(predictions, targets)
+    plt.scatter(targets, predictions, color=color)
     plt.xlabel("True Values [m/s^2]")
     plt.ylabel("Predictions [m/s^2]")
     lims = [minlim, maxlim]
@@ -160,32 +210,38 @@ def plot_predictions_vs_truth_per_level(
     # Make figures full screen
     fig.set_size_inches(32, 18)
     fig.savefig(os.path.join(save_path, f"{title}_predictions_vs_truth.png"))
+    plt.close(fig)
 
 
 def plot_predictions_vs_truth(
-    test_predictions: np.ndarray, 
-    test_targets: np.ndarray,
+    raw_predictions: np.ndarray,
+    raw_targets: np.ndarray,
+    test_predictions: Dict[str, np.ndarray], 
+    test_targets: Dict[str, np.ndarray],
     save_path: Union[os.PathLike, str],
 ) -> None:
+    num_plevels = raw_predictions[0].shape[0]
+    colors = cm.rainbow(np.linspace(0,1, num_plevels)) 
+
+    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
+        predictions, targets = values
+        plot_predictions_vs_truth_per_level(
+            predictions=predictions, 
+            targets=targets,
+            title=str(i),
+            color=colors[i],
+            save_path=save_path,
+        )
+
     fig = plt.figure()
     _ = plt.axes(aspect="equal")
 
-    minlim = np.min([np.min(test_predictions), np.min(test_targets)])
-    maxlim = np.max([np.max(test_predictions), np.max(test_targets)])
+    minlim = np.min([np.min(raw_predictions), np.min(raw_targets)])
+    maxlim = np.max([np.max(raw_predictions), np.max(raw_targets)])
 
-    num_plevels = test_predictions[0].shape[0]
-    colors = cm.rainbow(np.linspace(0,1, num_plevels)) 
-
-    for i in range(num_plevels):
-        test_predictions_plevel = np.float16(test_predictions[:, i])
-        test_targets_plevel = test_targets[:, i]
-        # plot_predictions_vs_truth_per_level(
-        #     predictions=test_predictions_plevel,
-        #     targets=test_targets_plevel,
-        #     title=str(i),
-        #     save_path=save_path,
-        # )
-        plt.scatter(test_predictions_plevel, test_targets_plevel, color=colors[i], label=f'plevel_{i}')
+    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
+        predictions, targets = values
+        plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{i}')
 
     plt.xlabel("True Values [m/s^2]")
     plt.ylabel("Predictions [m/s^2]")
@@ -198,31 +254,30 @@ def plot_predictions_vs_truth(
     # Make figures full screen
     fig.set_size_inches(32, 18)
     fig.savefig(os.path.join(save_path, f"aggregate_predictions_vs_truth.png"))
+    plt.close(fig)
 
 
 def plot_distributions_per_level(
-    metrics: Dict[str, np.ndarray],
-    test_predictions: np.ndarray,
-    test_targets: np.ndarray, 
+    test_predictions: Dict[str, np.ndarray],
+    test_targets: Dict[str, np.ndarray], 
     save_path: Union[os.PathLike, str],
 ) -> None: 
     # Iterate through each pressure level
-    for i in range(test_predictions[0].shape[0]):
-        test_predictions_plevel = np.float16(test_predictions[:, i])
-        test_targets_plevel = test_targets[:, i]
+    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
+        predictions, targets = values
 
         fig = plt.figure(figsize=(8,6))
         plt.hist(
-            [test_predictions_plevel, test_targets_plevel], 
-            bins=100, 
+            [predictions, targets], 
+            bins=1000, 
             label=["predictions", "targets"]
         )
         plt.xlabel("gwfu (m/s^2)", size=14)
         plt.ylabel("Count", size=14)
         plt.title(f"Histogram Predictions vs Targets for Plevel {i}")
         plt.legend(loc='upper right')
-        # plt.show()
 
         # Make figures full screen
         fig.set_size_inches(32, 18)
-        plt.savefig(os.path.join(save_path, f"predictions_targets_histogram_{i}.png"))
+        fig.savefig(os.path.join(save_path, f"predictions_targets_histogram_{i}.png"))
+        plt.close(fig)

@@ -6,6 +6,8 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from tensorflow import keras
+
 from lrgwd.evaluate.config import DEFAULTS
 from lrgwd.evaluate.utils import (generate_evaluation_package,
                                   generate_metrics,
@@ -15,7 +17,7 @@ from lrgwd.train.utils import get_model
 from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
-from tensorflow import keras
+from lrgwd.utils.data_operations import is_outlier
 
 
 @click.command("evaluate")
@@ -39,6 +41,18 @@ from tensorflow import keras
     show_default=True,
     type=str,
     help="Path to labels and test data"
+)
+@click.option(
+    "--remove-outliers",
+    default=None,
+    show_default=True,
+    help="Removes outliers with z-score threshold. If None, do not remove outliers"
+)
+@click.option(
+    "--num-test-samples",
+    default=100000,
+    show_default=True,
+    help="Number of samples to test with. If None, use the whole test dataset"
 )
 @click.option(
     "--target",
@@ -68,37 +82,39 @@ def main(**params):
         # Load Model
         if params["verbose"]: logger.info("Loading Model")
         model = keras.models.load_model(os.path.join(params["model_path"]))
+        model.summary()
 
-        if params["verbose"]: logger.info("Loading Data")
         # Load Test Data
+        if params["verbose"]: logger.info("Loading Data")
         evaluation_package = generate_evaluation_package(
             source_path=params["source_path"],
+            num_samples=params["num_test_samples"],
             target=params["target"],
         )
 
         # Predict
         if params["verbose"]: logger.info("Generate Predictions")
-        test_predictions = model.predict(evaluation_package.test_tensors)
-        test_predictions = np.hstack(test_predictions)
-        test_predictions = evaluation_package.target_scaler.inverse_transform(test_predictions)
+        evaluation_package.predict(model, params["remove_outliers"])
 
+
+        # Visualize and Metrics
         if params["verbose"]: logger.info("Visualize")
         metrics = generate_metrics(
-            test_predictions=test_predictions, 
             test_targets=evaluation_package.test_targets,
-            test_labels=evaluation_package.test_labels,
+            test_predictions=evaluation_package.raw_test_predictions,
             save_path=params["save_path"],
         )
 
         plot_distributions_per_level(
-            metrics=metrics,
-            test_predictions=test_predictions,
-            test_targets=evaluation_package.test_targets,
+            test_targets=evaluation_package.targets,
+            test_predictions=evaluation_package.predictions,
             save_path=params["save_path"]
         )
 
         plot_predictions_vs_truth(
-            test_predictions=test_predictions,
-            test_targets=evaluation_package.test_targets,
+            raw_predictions=evaluation_package.raw_test_predictions,
+            raw_targets=evaluation_package.test_targets,
+            test_predictions=evaluation_package.predictions,
+            test_targets=evaluation_package.targets,
             save_path=params["save_path"],
         )
