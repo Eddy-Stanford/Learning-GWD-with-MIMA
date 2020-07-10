@@ -1,10 +1,10 @@
 import os
-from typing import Dict, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
 from lrgwd.config import (NON_ZERO_GWD_PLEVELS, TARGET_FEATURES, TENSOR,
-                          TRAIN_FEATURES)
+                          TRAIN_FEATURES, VERTICAL_COLUMN_FEATURES)
 from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
 from lrgwd.utils.io import to_pickle
 from lrgwd.utils.logger import logger
@@ -20,11 +20,36 @@ class Data(object):
         self.lat = self.data_shape[2]
         self.lon = self.data_shape[3]
 
+def save_metadata(
+    path: os.PathLike,
+    total_samples: int,
+    features: List[str],
+    plevels: int,
+    output_shape: Tuple[int],
+) -> None:
+    input_shape = len(features)
+    num_vc_feat = 0
+    for vc_feat in VERTICAL_COLUMN_FEATURES: 
+        if vc_feat in features: 
+            input_shape -= 1
+            num_vc_feat += 1
+
+    input_shape = input_shape*plevels + num_vc_feat
+    to_pickle(
+        path=path,
+        obj={
+            "total_samples": total_samples,
+            "input_shape": input_shape,
+            "output_shape": output_shape
+        }
+    )
+
 
 def vectorized_extract_tensors(
     data: Data,
     save_path: Union[os.PathLike, str],
     num_samples: Union[int, None],
+    features: List[str],
     plevels: int,
     verbose: bool = True,
 ) -> None:
@@ -51,36 +76,44 @@ def vectorized_extract_tensors(
         num_samples = total_num_samples
 
     # Save Metadata
-    to_pickle(
+    save_metadata(
         path=os.path.join(save_path, "metadata.pkl"),
-        obj={
-            "total_samples": num_samples,
-            "input_shape": ((len(TRAIN_FEATURES) - 1)*plevels + 1, ),
-            "output_shape": (NON_ZERO_GWD_PLEVELS,)
-        }
+        total_samples=num_samples,
+        features=features,
+        plevels=plevels,
+        output_shape=(NON_ZERO_GWD_PLEVELS,)
     )
 
     idx = np.random.choice(np.arange(total_num_samples), num_samples, replace=False)
-
+    features.extend(TARGET_FEATURES)
     paste_command = f"paste "
-    for feat in TENSOR:
-        # Memory Load Feature
-        if verbose: logger.info(f"Memory Loading {feat}")
-        feat_data = np.array(npz_data[feat])
+    for feat in features:
+        if feat == "lat":
+            feat_data = np.indices((data.time, data.lat, data.lon))[1,:,:,:]
+        elif feat == "lon":
+            feat_data = np.indices((data.time, data.lat, data.lon))[2,:,:,:]
+        else:
+            # Memory Load Feature
+            if verbose: logger.info(f"Memory Loading {feat}")
+            feat_data = np.array(npz_data[feat])
 
         # Extract Feature
         if verbose: logger.info(f"Extracting {feat}")
-        if feat == "slp": 
+        if feat in VERTICAL_COLUMN_FEATURES: #== "slp": 
             # Flatten time, lat, lon dimensions
             feat_data = np.stack(feat_data)
             feat_data = feat_data.reshape(1, total_num_samples)
         else:
-            # Flatten time, lat, lon dimensions while preserving vertical columns
-            feat_data = np.stack(feat_data[:,:plevels,:,:], axis=1)
-            feat_data = feat_data.reshape(plevels, total_num_samples)
+            if feat in TARGET_FEATURES: 
+                # Flatten time, lat, lon dimensions while preserving vertical columns
+                feat_data = np.stack(feat_data[:,:NON_ZERO_GWD_PLEVELS,:,:], axis=1)
+                feat_data = feat_data.reshape(NON_ZERO_GWD_PLEVELS, total_num_samples)
+            elif feat in TRAIN_FEATURES:
+                feat_data = np.stack(feat_data[:,:plevels,:,:], axis=1)
+                feat_data = feat_data.reshape(plevels, total_num_samples)
+
         # Sample & Shuffle
         feat_data = feat_data[:, idx].T
-
         if feat in TRAIN_FEATURES:
             feat_label = feat
             paste_command += os.path.join(save_path, f"{feat}.csv ")

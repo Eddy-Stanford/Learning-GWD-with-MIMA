@@ -2,6 +2,7 @@
 /runs/*
 .pre-commit-config.yaml
 /.vscode/*
-*/__pycache__/*
+__pycache__/
+/trained_models/*
 /lrgwd.egg-info/
 /lrgwd/train/__pycache__/*

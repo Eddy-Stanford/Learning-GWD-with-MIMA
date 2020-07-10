@@ -32,8 +32,9 @@ FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "level", "slp", "gwfu_cgw
 NON_ZERO_GWD_PLEVELS = 18
 
 TENSOR = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "gwfu_cgwd", "gwfv_cgwd"]
+VERTICAL_COLUMN_FEATURES = ["slp", "lat", "lon"]
 
-TRAIN_FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "slp"]
+TRAIN_FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
 TARGET_FEATURES = ["gwfu_cgwd", "gwfv_cgwd"]
 
 # FEATURE_INFO = {

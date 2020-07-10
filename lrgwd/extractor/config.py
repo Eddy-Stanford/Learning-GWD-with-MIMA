@@ -7,7 +7,8 @@ DEFAULTS = {
         "num_steps": 64,
     },
     "num_samples": None,
-    "plevels_included": 18
+    "plevels_included": 22,
+    "features": ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
 }
 
 TENSORS_FN = "tensors.csv"

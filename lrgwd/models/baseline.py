@@ -32,19 +32,19 @@ class BaseLine():
             # RMSProp (reduces variation in steps)
             optimizer=adam_optimizer,
             loss=[
-                tf.keras.losses.MeanAbsoluteError(), # 0
-                tf.keras.losses.MeanAbsoluteError(), # 1
-                tf.keras.losses.MeanAbsoluteError(), # 2
-                tf.keras.losses.MeanAbsoluteError(), # 3
-                tf.keras.losses.MeanAbsoluteError(), # 4
-                tf.keras.losses.MeanAbsoluteError(), # 5
-                tf.keras.losses.MeanAbsoluteError(), # 6
-                tf.keras.losses.MeanAbsoluteError(), # 7
-                tf.keras.losses.MeanAbsoluteError(), # 8
-                tf.keras.losses.MeanAbsoluteError(), # 9
-                tf.keras.losses.MeanAbsoluteError(), # 10
-                tf.keras.losses.MeanAbsoluteError(), # 11
-                tf.keras.losses.MeanAbsoluteError(), # 12
+                tf.keras.losses.MeanSquaredError(), # 0
+                tf.keras.losses.MeanSquaredError(), # 1
+                tf.keras.losses.MeanSquaredError(), # 2
+                tf.keras.losses.MeanSquaredError(), # 3
+                tf.keras.losses.MeanSquaredError(), # 4
+                tf.keras.losses.MeanSquaredError(), # 5
+                tf.keras.losses.MeanSquaredError(), # 6
+                tf.keras.losses.MeanSquaredError(), # 7
+                tf.keras.losses.MeanSquaredError(), # 8
+                tf.keras.losses.MeanSquaredError(), # 9
+                tf.keras.losses.MeanSquaredError(), # 10
+                tf.keras.losses.MeanSquaredError(), # 11
+                tf.keras.losses.MeanSquaredError(), # 12
                 tf.keras.losses.MeanAbsoluteError(), # 13
                 tf.keras.losses.MeanAbsoluteError(), # 14
                 tf.keras.losses.MeanAbsoluteError(), # 15

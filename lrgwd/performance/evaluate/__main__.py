@@ -6,18 +6,18 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tensorflow import keras
-
-from lrgwd.evaluate.config import DEFAULTS
-from lrgwd.evaluate.utils import (generate_evaluation_package,
-                                  generate_metrics,
-                                  plot_distributions_per_level,
-                                  plot_predictions_vs_truth)
+from lrgwd.performance.config import DEFAULTS
+from lrgwd.performance.evaluate.utils import (generate_evaluation_package,
+                                              generate_metrics)
+from lrgwd.performance.visualize import (plot_distributions_per_level,
+                                         plot_predictions_vs_truth,
+                                         plot_r_squared)
 from lrgwd.train.utils import get_model
+from lrgwd.utils.data_operations import is_outlier
 from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
-from lrgwd.utils.data_operations import is_outlier
+from tensorflow import keras
 
 
 @click.command("evaluate")
@@ -30,14 +30,14 @@ from lrgwd.utils.data_operations import is_outlier
 )
 @click.option(
     "--save-path",
-    default=DEFAULTS["save_path"],
+    default=DEFAULTS["evaluate"]["save_path"],
     show_default=True,
     type=str,
     help="File path to save evaluation plots"
 )
 @click.option(
     "--source-path",
-    default=DEFAULTS["source_path"],
+    default=DEFAULTS["evaluate"]["source_path"],
     show_default=True,
     type=str,
     help="Path to labels and test data"
@@ -67,6 +67,7 @@ from lrgwd.utils.data_operations import is_outlier
     help="Track run using mlflow"
 )
 @click.option("--verbose/--no-verbose", default=True)
+@click.option("--visualize/--no-visualize", default=True)
 def main(**params):
     """
     Evaluate Model
@@ -94,27 +95,38 @@ def main(**params):
 
         # Predict
         if params["verbose"]: logger.info("Generate Predictions")
-        evaluation_package.predict(model, params["remove_outliers"])
+        evaluation_package.predict(
+            model, params["remove_outliers"], save_path=params["save_path"]
+        )
 
 
         # Visualize and Metrics
-        if params["verbose"]: logger.info("Visualize")
+        if params["verbose"]: logger.info("Generate Metrics")
         metrics = generate_metrics(
             test_targets=evaluation_package.test_targets,
             test_predictions=evaluation_package.raw_test_predictions,
+            plevel_test_predictions=evaluation_package.predictions,
+            plevel_test_targets=evaluation_package.targets,
             save_path=params["save_path"],
         )
 
-        plot_distributions_per_level(
-            test_targets=evaluation_package.targets,
-            test_predictions=evaluation_package.predictions,
-            save_path=params["save_path"]
-        )
+        if params["visualize"]:
+            if params["verbose"]: logger.info("Visualize")
+            plot_distributions_per_level(
+                test_targets=evaluation_package.targets,
+                test_predictions=evaluation_package.predictions,
+                save_path=params["save_path"]
+            )
 
-        plot_predictions_vs_truth(
-            raw_predictions=evaluation_package.raw_test_predictions,
-            raw_targets=evaluation_package.test_targets,
-            test_predictions=evaluation_package.predictions,
-            test_targets=evaluation_package.targets,
-            save_path=params["save_path"],
-        )
+            plot_predictions_vs_truth(
+                raw_predictions=evaluation_package.raw_test_predictions,
+                raw_targets=evaluation_package.test_targets,
+                test_predictions=evaluation_package.predictions,
+                test_targets=evaluation_package.targets,
+                save_path=params["save_path"],
+            )
+
+            plot_r_squared(
+                r_squared=metrics["r_squared"],
+                save_path=params["save_path"]
+            )

@@ -47,6 +47,13 @@ from tqdm import tqdm
     help="Use only the top N plevels"
 )
 @click.option(
+    "--features",
+    default=DEFAULTS["features"],
+    show_default=True,
+    multiple=True,
+    help="List of features to extract"
+)
+@click.option(
     "--num-samples",
     default=DEFAULTS["num_samples"],
     show_default=True,
@@ -112,10 +119,13 @@ def main(**params):
                     num_samples=params["num_samples"],
                 )
             else: 
+                features = list(params["features"])
+                logger.info(f"FEATURES: {features}")
                 vectorized_extract_tensors(
                     data=data,
                     save_path=params["save_path"],
                     num_samples=params["num_samples"],
+                    features=features,
                     plevels=params["plevels_included"],
                     verbose=params["verbose"],
                 )
