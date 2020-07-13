@@ -1,5 +1,5 @@
 import os
-from typing import Any, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ from lrgwd.split.config import (TEST_GWFU_FN, TEST_GWFV_FN, TEST_LABELS_FN,
                                 TEST_TENSORS_FN, TRAIN_GWFU_FN, TRAIN_GWFV_FN,
                                 TRAIN_LABELS_FN, TRAIN_TENSORS_FN, VAL_GWFU_FN,
                                 VAL_GWFV_FN, VAL_LABELS_FN, VAL_TENSORS_FN)
-from lrgwd.split.preprocess import Preprocessor
+from lrgwd.split.scaler import Scaler
 from lrgwd.utils.io import from_pickle, to_pickle
 from tqdm import tqdm
 
@@ -97,6 +97,7 @@ def split(
     source_path: Union[os.PathLike, str],
     cnn_features: bool,
     batch_size: int,
+    scaler_info: Dict[str, Union[str, bool]]
 ): 
     # Source Paths
     tensors_path = os.path.join(source_path, TENSORS_FN)    
@@ -105,7 +106,7 @@ def split(
     labels_path = os.path.join(source_path, LABELS_FN)
 
     splitter = Splitter(save_path)
-    preprocessor = Preprocessor(save_path)
+    scaler = Scaler(scaler_info,save_path)
 
     # Number of samples in each set
     num_test_samples = np.floor(test_split*num_samples)
@@ -138,7 +139,7 @@ def split(
                 gwfv=gwfv_chunk, 
                 # labels=labels_chunk
             )
-            preprocessor.partial_fit(
+            scaler.partial_fit(
                 tensors=tensor_chunk,
                 gwfu=gwfu_chunk, 
                 gwfv=gwfv_chunk, 
@@ -162,4 +163,4 @@ def split(
 
         if num_read >= num_samples: break
 
-    preprocessor.save()
+    scaler.save()

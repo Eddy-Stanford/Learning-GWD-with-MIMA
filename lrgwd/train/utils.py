@@ -4,6 +4,7 @@ from typing import Any, Tuple, Union
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from lrgwd.config import NON_ZERO_GWD_PLEVELS
 from lrgwd.models.baseline import BaseLine
 from lrgwd.models.config import VALID_MODELS
 from lrgwd.train.config import MONITOR_METRIC
@@ -88,8 +89,13 @@ class DataGenerator(utils.Sequence):
         """
         Generate one batch of data
         """
-        X, y = next(self.generator)
-        return (X, y)
+        try: 
+            X, y = next(self.generator)
+            return (X, y)
+        except StopIteration:
+            self.generator = self._get_batch()
+            X, y = next(self.generator)
+            return (X, y)
 
 
     def _get_batch(self):
@@ -101,13 +107,12 @@ class DataGenerator(utils.Sequence):
             tensors_chunk, target_chunk = (tensors_chunk.to_numpy(), target_chunk.to_numpy())
             # standardize chunk
             tensors_chunk = self.tensors_scaler.transform(tensors_chunk)
-            # target_chunk = target_chunk*(10**7)
             target_chunk  = self.target_scaler.transform(target_chunk)
 
             # convert to tf Dataset
-            train_dataset = tf.data.Dataset.from_tensor_slices((tensors_chunk, target_chunk)).repeat()
+            train_dataset = tf.data.Dataset.from_tensor_slices((tensors_chunk, target_chunk))
             
             train_dataset = train_dataset.shuffle(buffer_size=self.chunk_size).batch(self.batch_size)
             for train_batch, target_batch in train_dataset:
-                target_batch = np.hsplit(target_batch, 18)
+                target_batch = np.hsplit(target_batch, NON_ZERO_GWD_PLEVELS)
                 yield train_batch, target_batch

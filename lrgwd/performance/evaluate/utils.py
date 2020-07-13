@@ -6,45 +6,77 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
-from lrgwd.utils.data_operations import is_outlier
-from lrgwd.utils.io import from_pickle, to_pickle
-from lrgwd.utils.logger import logger
+
+from tqdm import tqdm 
 from scipy.stats import linregress
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
+from lrgwd.utils.data_operations import is_outlier
+from lrgwd.utils.io import from_pickle, to_pickle
+from lrgwd.utils.logger import logger
+
 
 class EvaluationPackage(object):
-    def __init__(self, test_tensors, test_targets, tensors_scaler, target_scaler):
-        self.test_tensors = test_tensors
-        self.test_targets = test_targets
-        self.test_labels = None
-        self.tensors_scaler = tensors_scaler
-        self.target_scaler = target_scaler 
+    def __init__(self, 
+        source_path: Union[os.PathLike, str],
+        num_samples: Union[None, float],
+        target: str,
+        remove_outliers: Union[str, float],
+        save_path: Union[os.PathLike, str],
+        model,
+    ) -> None:
 
-    def predict(self, model, outliers, save_path):
-        test_predictions = model.predict(self.test_tensors)
-        test_predictions = np.hstack(test_predictions)
-        self.raw_test_predictions = self.target_scaler.inverse_transform(test_predictions)
+        test_tensors_fp = os.path.join(source_path, "train_tensors.csv")
+        test_targets_fp = os.path.join(source_path, f"train_{target}.csv")
 
-        # Split predictions per level 
-        num_plevels = self.raw_test_predictions[0].shape[0]
-        self.predictions = {}
-        self.targets = {}
-        for i in range(num_plevels):
-            plevel_predictions = self.raw_test_predictions[:, i]
-            plevel_targets = self.test_targets[:, i]
+        # Get Scalers
+        tensors_scaler_fp = os.path.join(source_path, "tensors_scaler.pkl")
+        tensors_scaler = from_pickle(tensors_scaler_fp)
 
-            # Remove Outliers
-            if outliers is not None:
-                plevel_predictions, plevel_targets = self.remove_outliers(
-                    predictions=plevel_predictions,
-                    targets=plevel_targets,
-                    outliers=float(outliers),
+        target_scaler_fp = os.path.join(source_path, f"{target}_scaler.pkl")
+        target_scaler = from_pickle(target_scaler_fp)
+
+        self.predictions = []
+        self.targets = []
+        chunksize = 1000000
+        num_total_predictions = 0
+        if num_samples < chunksize: chunksize = num_samples
+
+        for test_tensors, test_targets in tqdm(zip(
+            pd.read_csv(test_tensors_fp, chunksize=chunksize), 
+            pd.read_csv(test_targets_fp, chunksize=chunksize), 
+        ), "Load test data"):
+            if num_samples is not None and num_total_predictions >= num_samples: break 
+
+            test_tensors = test_tensors.to_numpy()
+            test_targets = test_targets.to_numpy()
+
+            # Transform Targets
+            test_tensors = tensors_scaler.transform(test_tensors)
+
+            self.targets.append(test_targets)
+            self.predictions.append(
+                self.predict(
+                    model=model, 
+                    tensors=test_tensors,
+                    target_scaler=target_scaler,
                 )
+            )
+        
+            num_total_predictions += chunksize
 
-            self.predictions[f"plevel_{i}"] = plevel_predictions
-            self.targets[f"plevel_{i}"] = plevel_targets
+        self.predictions = np.concatenate(np.array(self.predictions), axis=0)
+        self.targets = np.concatenate(np.array(self.targets), axis=0)
 
+
+        # Removes outliers and returns dictionary keyed on each pressure level
+        self.plevel_predictions, self.plevel_targets = self.split_predictions_on_plevel(
+            predictions=self.predictions, 
+            targets=self.targets,
+            outliers=remove_outliers,
+        )
+
+        # Save unaltered predictions and targets
         to_pickle(
             path=os.path.join(save_path, "predictions.pkl"),
             obj={
@@ -52,6 +84,43 @@ class EvaluationPackage(object):
                 "targets": self.targets,
             }
         )        
+
+
+    def predict(self, model, tensors, target_scaler):
+        predictions = model.predict(tensors)
+        predictions = np.hstack(predictions)
+        predictions = target_scaler.inverse_transform(predictions)
+
+        return predictions
+
+    
+    def split_predictions_on_plevel(self, 
+        predictions: np.ndarray, 
+        targets: np.ndarray, 
+        outliers: Union[None, float]
+    ):
+        # Split predictions per level 
+        plevel_predictions = {}
+        plevel_targets = {}
+
+        num_plevels = predictions.shape[1]
+        for i in range(num_plevels):
+            slice_predictions = predictions[:, i]
+            slice_targets = targets[:, i]
+
+            # Remove Outliers
+            if outliers is not None:
+                plevel_predictions, plevel_targets = self.remove_outliers(
+                    predictions=slice_predictions,
+                    targets=slice_targets,
+                    outliers=float(outliers),
+                )
+            
+            plevel_predictions[f"plevel_{i}"] = slice_predictions
+            plevel_targets[f"plevel_{i}"] = slice_targets
+        
+        return plevel_predictions, plevel_targets
+
 
     def remove_outliers(self, 
         predictions: np.ndarray,
@@ -69,65 +138,27 @@ class EvaluationPackage(object):
         return (predictions, targets)
 
 
-def generate_evaluation_package(
-    source_path: Union[os.PathLike, str],
-    num_samples: Union[None, float],
-    target: str,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    test_tensors_fp = os.path.join(source_path, "test_tensors.csv")
-    test_targets_fp = os.path.join(source_path, f"test_{target}.csv")
-
-
-    if num_samples is None: 
-        test_targets = pd.read_csv(test_targets_fp).to_numpy()
-        test_tensors = pd.read_csv(test_tensors_fp).to_numpy()
-    else: 
-        for test_tensors, test_targets in zip(
-            pd.read_csv(test_tensors_fp, chunksize=num_samples), 
-            pd.read_csv(test_targets_fp, chunksize=num_samples), 
-        ):
-            test_tensors = test_tensors.to_numpy()
-            test_targets = test_targets.to_numpy()
-            break
-
-    # Transform Targets
-    tensors_scaler_fp = os.path.join(source_path, "tensors_scaler.pkl")
-    tensors_scaler = from_pickle(tensors_scaler_fp)
-    test_tensors = tensors_scaler.transform(test_tensors)
-
-    target_scaler_fp = os.path.join(source_path, f"{target}_scaler.pkl")
-    target_scaler = from_pickle(target_scaler_fp)
-
-
-    return EvaluationPackage(
-        test_tensors=test_tensors,
-        test_targets=test_targets,
-        tensors_scaler=tensors_scaler,
-        target_scaler=target_scaler,
-    )
-
-
 def generate_metrics(
-    test_predictions: np.ndarray, 
-    test_targets: np.ndarray,
-    plevel_test_predictions: Dict[str, np.ndarray],
-    plevel_test_targets: Dict[str, np.ndarray],
+    predictions: np.ndarray, 
+    targets: np.ndarray,
+    plevel_predictions: Dict[str, np.ndarray],
+    plevel_targets: Dict[str, np.ndarray],
     save_path: Union[os.PathLike, str]
 ) -> None:
     # Pressure Level Specific Metrics
     metrics = {
-        "maes": mean_absolute_error(test_targets, test_predictions, multioutput="raw_values"),
-        "rmse": mean_squared_error(test_targets, test_predictions, multioutput="raw_values", squared=False),
-        "stds": np.std(test_targets, axis=1),
-        "mins": np.min(test_targets, axis=1),
-        "maxes": np.max(test_targets, axis=1),
-        "means": np.mean(test_targets, axis=1),
-        "medians": np.median(test_targets, axis=1),
+        "maes": mean_absolute_error(targets, predictions, multioutput="raw_values"),
+        "rmse": mean_squared_error(targets, predictions, multioutput="raw_values", squared=False),
+        "stds": np.std(targets, axis=1),
+        "mins": np.min(targets, axis=1),
+        "maxes": np.max(targets, axis=1),
+        "means": np.mean(targets, axis=1),
+        "medians": np.median(targets, axis=1),
     }
 
     metrics["r_squared"] = calculate_r_squared(
-        test_predictions=plevel_test_predictions, 
-        test_targets=plevel_test_targets,
+        test_predictions=plevel_predictions, 
+        test_targets=plevel_targets,
     )
 
     to_pickle(os.path.join(save_path, "metrics.pkl"), metrics)
@@ -144,5 +175,5 @@ def calculate_r_squared(
         predictions, targets = values
         slope, intercept, r_value, p_value, std_err = linregress(predictions, targets)
         r_squared.append(r_value**2)
-
     return r_squared
+

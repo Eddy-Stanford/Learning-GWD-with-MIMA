@@ -25,7 +25,7 @@ def plot_predictions_vs_truth_per_level(
 
     fig = plt.figure()
     _ = plt.axes(aspect="equal")
-    plt.scatter(targets, predictions, color=color)
+    plt.scatter(targets, predictions, alpha=.5, color=color)
     plt.xlabel("True Values [m/s^2]")
     plt.ylabel("Predictions [m/s^2]")
     lims = [minlim, maxlim]
@@ -40,20 +40,20 @@ def plot_predictions_vs_truth_per_level(
 
 
 def plot_predictions_vs_truth(
-    raw_predictions: np.ndarray,
-    raw_targets: np.ndarray,
-    test_predictions: Dict[str, np.ndarray], 
-    test_targets: Dict[str, np.ndarray],
+    predictions: np.ndarray,
+    targets: np.ndarray,
+    plevel_predictions: Dict[str, np.ndarray], 
+    plevel_targets: Dict[str, np.ndarray],
     save_path: Union[os.PathLike, str],
 ) -> None:
-    num_plevels = raw_predictions[0].shape[0]
+    num_plevels = predictions[0].shape[0]
     colors = cm.rainbow(np.linspace(0,1, num_plevels)) 
 
-    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
-        predictions, targets = values
+    for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
+        level_predictions, level_targets = values
         plot_predictions_vs_truth_per_level(
-            predictions=predictions, 
-            targets=targets,
+            predictions=level_predictions, 
+            targets=level_targets,
             title=str(i),
             color=colors[i],
             save_path=save_path,
@@ -62,10 +62,10 @@ def plot_predictions_vs_truth(
     fig = plt.figure()
     _ = plt.axes(aspect="equal")
 
-    minlim = np.min([np.min(raw_predictions), np.min(raw_targets)])
-    maxlim = np.max([np.max(raw_predictions), np.max(raw_targets)])
+    minlim = np.min([np.min(predictions), np.min(targets)])
+    maxlim = np.max([np.max(predictions), np.max(targets)])
 
-    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
+    for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
         plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{i}')
 
@@ -84,12 +84,12 @@ def plot_predictions_vs_truth(
 
 
 def plot_distributions_per_level(
-    test_predictions: Dict[str, np.ndarray],
-    test_targets: Dict[str, np.ndarray], 
+    plevel_predictions: Dict[str, np.ndarray],
+    plevel_targets: Dict[str, np.ndarray], 
     save_path: Union[os.PathLike, str],
 ) -> None: 
     # Iterate through each pressure level
-    for i, values in enumerate(zip(test_predictions.values(), test_targets.values())):
+    for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
 
         fig = plt.figure(figsize=(8,6))

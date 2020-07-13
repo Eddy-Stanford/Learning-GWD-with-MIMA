@@ -85,13 +85,13 @@ def main(**params):
                     feat_info[feat] = generate_metrics(feat, cdf_data.variables[feat])
                     feat_data = cdf_data.variables[feat][:]
 
-                    plot_distribution(
-                        feat_info=feat_info[feat], 
-                        feat_data=feat_data,
-                        save_path=save_path
-                    )
+                    # plot_distribution(
+                    #     feat_info=feat_info[feat], 
+                    #     feat_data=feat_data,
+                    #     save_path=save_path
+                    # )
 
-                    if feat == "gwfu_cgwd" or feat == "gwfv_cgwd":
+                    if feat == "ucomp" or feat == "gwfu_cgwd" or feat == "gwfv_cgwd":
                         plevels = cdf_data.variables['level'][:]
                         plot_distribution_per_level(
                             feat_info=feat_info[feat], 
@@ -101,13 +101,13 @@ def main(**params):
                         )
                 
                 if params["verbose"]: logger.info(f"Plot scatter")
-                plot_scatter(
-                    X_info=feat_info["gwfv_cgwd"],
-                    y_info=feat_info["gwfu_cgwd"],
-                    X=cdf_data.variables["gwfv_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
-                    y=cdf_data.variables["gwfu_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
-                    save_path=save_path,
-                )
+                # plot_scatter(
+                #     X_info=feat_info["gwfv_cgwd"],
+                #     y_info=feat_info["gwfu_cgwd"],
+                #     X=cdf_data.variables["gwfv_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
+                #     y=cdf_data.variables["gwfu_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
+                #     save_path=save_path,
+                # )
 
                 to_json(os.path.join(save_path, "feat_info.json"), feat_info) 
 

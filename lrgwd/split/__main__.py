@@ -77,6 +77,11 @@ from lrgwd.utils.tracking import tracking
     show_default=True,
     help="Track run using mlflow"
 )
+@click.option(
+    "--scaler-path", 
+    default=DEFAULTS["save_path"],
+)
+@click.option("--load-scaler/--no-load-scaler", default=False)
 @click.option("--verbose/--no-verbose", default=True)
 def main(**params):
     with tracking(
@@ -103,6 +108,7 @@ def main(**params):
             source_path=params["source_path"],
             cnn_features=params["using_cnn_features"],
             batch_size=params["batch_size"],
+            scaler_info={"load": params["load_scaler"], "path": params["scaler_path"]},
         )
 
 

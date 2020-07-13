@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from lrgwd.performance.config import DEFAULTS
-from lrgwd.performance.evaluate.utils import (generate_evaluation_package,
+from lrgwd.performance.evaluate.utils import (EvaluationPackage,
                                               generate_metrics)
 from lrgwd.performance.visualize import (plot_distributions_per_level,
                                          plot_predictions_vs_truth,
@@ -86,43 +86,45 @@ def main(**params):
         model.summary()
 
         # Load Test Data
-        if params["verbose"]: logger.info("Loading Data")
-        evaluation_package = generate_evaluation_package(
+        if params["verbose"]: logger.info("Loading Data and Making Predictions")
+        evaluation_package = EvaluationPackage(
             source_path=params["source_path"],
             num_samples=params["num_test_samples"],
             target=params["target"],
+            remove_outliers=params["remove_outliers"],
+            save_path=params["save_path"],
+            model=model,
         )
 
-        # Predict
-        if params["verbose"]: logger.info("Generate Predictions")
-        evaluation_package.predict(
-            model, params["remove_outliers"], save_path=params["save_path"]
-        )
+        # # Predict
+        # evaluation_package.predict(
+        #     model, params["remove_outliers"], save_path=params["save_path"]
+        # )
 
 
         # Visualize and Metrics
         if params["verbose"]: logger.info("Generate Metrics")
         metrics = generate_metrics(
-            test_targets=evaluation_package.test_targets,
-            test_predictions=evaluation_package.raw_test_predictions,
-            plevel_test_predictions=evaluation_package.predictions,
-            plevel_test_targets=evaluation_package.targets,
+            targets=evaluation_package.targets,
+            predictions=evaluation_package.predictions,
+            plevel_predictions=evaluation_package.plevel_predictions,
+            plevel_targets=evaluation_package.plevel_targets,
             save_path=params["save_path"],
         )
 
         if params["visualize"]:
             if params["verbose"]: logger.info("Visualize")
             plot_distributions_per_level(
-                test_targets=evaluation_package.targets,
-                test_predictions=evaluation_package.predictions,
+                plevel_targets=evaluation_package.plevel_targets,
+                plevel_predictions=evaluation_package.plevel_predictions,
                 save_path=params["save_path"]
             )
 
             plot_predictions_vs_truth(
-                raw_predictions=evaluation_package.raw_test_predictions,
-                raw_targets=evaluation_package.test_targets,
-                test_predictions=evaluation_package.predictions,
-                test_targets=evaluation_package.targets,
+                predictions=evaluation_package.predictions,
+                targets=evaluation_package.targets,
+                plevel_predictions=evaluation_package.plevel_predictions,
+                plevel_targets=evaluation_package.plevel_targets,
                 save_path=params["save_path"],
             )
 

@@ -23,3 +23,7 @@ VAL_GWFU_FN = "val_gwfu.csv"
 
 TEST_GWFV_FN = "test_gwfv.csv"
 TEST_GWFU_FN = "test_gwfu.csv"
+
+GWFU_SCALER_FN = "gwfu_scaler.pkl"
+GWFV_SCALER_FN = "gwfv_scaler.pkl"
+TENSORS_SCALER_FN = "tensors_scaler.pkl"
