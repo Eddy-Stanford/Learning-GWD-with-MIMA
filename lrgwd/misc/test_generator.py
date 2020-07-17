@@ -7,15 +7,15 @@ def get_batch():
 batches = get_batch()
 
 def test_generator(batches):
-    i = 0 
+    i = 0
     while True:
         try:
             print(next(batches))
-        except StopIteration: 
+        except StopIteration:
             batches = get_batch()
-        i += 1 
+        i += 1
 
         if i == 10*5:
             return
-    
+
 test_generator(batches)

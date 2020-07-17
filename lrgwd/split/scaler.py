@@ -15,9 +15,9 @@ class Scaler():
         self.save_path = save_path
         if scaler["load"]:
             # load scalers
-            self.tensors_scaler = from_pickle(os.path.join(scaler["path"], GWFU_SCALER_FN))
-            self.gwfu_scaler = from_pickle(os.path.join(scaler["path"], GWFV_SCALER_FN))
-            self.gwfv_scaler = from_pickle(os.path.join(scaler["path"], TENSORS_SCALER_FN))
+            self.tensors_scaler = from_pickle(os.path.join(scaler["path"], TENSORS_SCALER_FN))
+            self.gwfu_scaler = from_pickle(os.path.join(scaler["path"], GWFU_SCALER_FN))
+            self.gwfv_scaler = from_pickle(os.path.join(scaler["path"], GWFV_SCALER_FN))
         else: 
             self.tensors_scaler = StandardScaler()
             self.gwfu_scaler = StandardScaler()

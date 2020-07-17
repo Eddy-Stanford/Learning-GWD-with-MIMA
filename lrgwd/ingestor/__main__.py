@@ -14,7 +14,14 @@ from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
 from scipy.io import netcdf
 
+"""
+This file converts raw netCDF data to npz data, generates metrics for each attribute of the netCDF data and
+creates histograms, scatter plots and box and whisker plots for each feature.  
 
+Example Usage: 
+python lrgwd ingestor --save-path ./runs/data/dev/ingestor --source-path ./raw_data/<filename.cdf> --visualize --convert 
+
+"""
 @click.command("ingestor")
 @click.option(
     "--save-path",
@@ -63,12 +70,9 @@ def main(**params):
                 if params['verbose']: 
                     logger.info(f"Converting CDF to NPZ (this may take a few minutes)")
 
-                # Convert from float32 to float16 for all varaibles except gwfu, gwfv and hght to reduce memory usage (extra precision unnecessary)
                 feats = defaultdict(str)
                 for feat in FEATURES:
                     feat_data = cdf_data.variables[feat][:]
-                    # if feat not in ["hght", "gwfu_cgwd", "gwfv_cgwd", "vcomp", "ucomp", "omega"]:
-                    #     feat_data = np.float16(feat_data)
                     feats[feat] = feat_data
                 np.savez_compressed(
                     os.path.join(save_path, 'raw_data.npz'), 
@@ -85,11 +89,11 @@ def main(**params):
                     feat_info[feat] = generate_metrics(feat, cdf_data.variables[feat])
                     feat_data = cdf_data.variables[feat][:]
 
-                    # plot_distribution(
-                    #     feat_info=feat_info[feat], 
-                    #     feat_data=feat_data,
-                    #     save_path=save_path
-                    # )
+                    plot_distribution(
+                        feat_info=feat_info[feat], 
+                        feat_data=feat_data,
+                        save_path=save_path
+                    )
 
                     if feat == "ucomp" or feat == "gwfu_cgwd" or feat == "gwfv_cgwd":
                         plevels = cdf_data.variables['level'][:]
@@ -101,13 +105,13 @@ def main(**params):
                         )
                 
                 if params["verbose"]: logger.info(f"Plot scatter")
-                # plot_scatter(
-                #     X_info=feat_info["gwfv_cgwd"],
-                #     y_info=feat_info["gwfu_cgwd"],
-                #     X=cdf_data.variables["gwfv_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
-                #     y=cdf_data.variables["gwfu_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
-                #     save_path=save_path,
-                # )
+                plot_scatter(
+                    X_info=feat_info["gwfv_cgwd"],
+                    y_info=feat_info["gwfu_cgwd"],
+                    X=cdf_data.variables["gwfv_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
+                    y=cdf_data.variables["gwfu_cgwd"][:][:,:NON_ZERO_GWD_PLEVELS,:,:],
+                    save_path=save_path,
+                )
 
                 to_json(os.path.join(save_path, "feat_info.json"), feat_info) 
 

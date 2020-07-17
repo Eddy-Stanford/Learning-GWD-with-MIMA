@@ -3,7 +3,19 @@ from typing import Any, Dict
 import numpy as np
 
 
-def generate_metrics(feat: str, cdf_variable) -> Dict[str, Any]:
+def generate_metrics(feat: str, cdf_variable: np.ndarray) -> Dict[str, Any]:
+    """
+    Generate metrics about the given feature
+    
+    Parameters: 
+    -----------
+        feat (str) : name of feature
+        cdf_variable (np.ndarray) : data for feature (e.g. [time, pressure levels, lat, lon])
+    
+    Returns:
+    --------
+        feat_info (dict[str, any]) : metrics for feature
+    """
     data = cdf_variable[:]
     valid_range = ""
 

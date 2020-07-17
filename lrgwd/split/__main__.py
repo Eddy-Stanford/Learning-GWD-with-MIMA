@@ -12,7 +12,20 @@ from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
 
+"""
+Splits csv from extractor into train, validation, and test sets. This command
+also either creates a standard scaler or loads a standard scaler trains it. 
 
+Example Usage: 
+python lrgwd split \
+    --save-path ./runs/data/split \
+    --source-path ./runs/data/extractor \
+    --test-split .10 \
+    --val-split .05 \
+    --num-samples 1000000 \
+    --load-scaler True \
+    --scaler-path ./runs/data/split_dev 
+"""
 @click.command("split")
 @click.option(
     "--save-path",

@@ -26,7 +26,15 @@ def save_metadata(
     features: List[str],
     plevels: int,
     output_shape: Tuple[int],
+    indx: List[int],
 ) -> None:
+    """
+    Pickles Metadata: 
+        input_shape: shape of train tensor for vertical column
+        output_shape: shape of gwfu or gwfv tensor for vertical column
+        indx: indicies that we used to shuffle
+        total samples extracted
+    """
     input_shape = len(features)
     num_vc_feat = 0
     for vc_feat in VERTICAL_COLUMN_FEATURES: 
@@ -40,7 +48,8 @@ def save_metadata(
         obj={
             "total_samples": total_samples,
             "input_shape": input_shape,
-            "output_shape": output_shape
+            "output_shape": output_shape,
+            "indx": indx,
         }
     )
 
@@ -52,9 +61,12 @@ def vectorized_extract_tensors(
     features: List[str],
     plevels: int,
     verbose: bool = True,
+    shuffle: bool = True,
 ) -> None:
     """
-    NOTE: This is far more efficient than `extract_tensors` and solves previous speed issues. 
+    NOTE: This is far more efficient than `extract_tensors` and solves previous speed issues, 
+    but individually saves each feature into its own file. After they are pasted together to 
+    create `tensors.csv` be sure to delete each feature file to avoid unnecessary memory usage. 
 
     Extracts feature tensors and target columns from raw data.
 
@@ -67,6 +79,7 @@ def vectorized_extract_tensors(
     plevels (int): number of pressure levels to include in tensors. 
         Use to ignore low altitude pressure levels
     verbose (bool)
+    shuffle (bool)
     """
     npz_data = data.npz_data
     total_num_samples = data.time*data.lat*data.lon
@@ -75,19 +88,20 @@ def vectorized_extract_tensors(
         logger.warning(f"Extracting all possible samples {total_num_samples}")
         num_samples = total_num_samples
 
+    idx = np.random.choice(np.arange(total_num_samples), num_samples, replace=False)
     # Save Metadata
     save_metadata(
         path=os.path.join(save_path, "metadata.pkl"),
         total_samples=num_samples,
         features=features,
         plevels=plevels,
-        output_shape=(NON_ZERO_GWD_PLEVELS,)
+        output_shape=(NON_ZERO_GWD_PLEVELS,),
+        indx=idx,
     )
 
-    idx = np.random.choice(np.arange(total_num_samples), num_samples, replace=False)
     features.extend(TARGET_FEATURES)
     paste_command = f"paste "
-    for feat in features:
+    for feat in features: 
         if feat == "lat":
             feat_data = np.indices((data.time, data.lat, data.lon))[1,:,:,:]
         elif feat == "lon":
@@ -113,7 +127,8 @@ def vectorized_extract_tensors(
                 feat_data = feat_data.reshape(plevels, total_num_samples)
 
         # Sample & Shuffle
-        feat_data = feat_data[:, idx].T
+        if shuffle: feat_data = feat_data[:, idx]
+        feat_data = feat_data.T
         if feat in TRAIN_FEATURES:
             feat_label = feat
             paste_command += os.path.join(save_path, f"{feat}.csv ")
@@ -126,8 +141,7 @@ def vectorized_extract_tensors(
             logger.warning("Unused attribute")
             continue
 
-        with open(os.path.join(save_path, f"{feat_label}.csv"), 'a+') as f:
-            np.savetxt(f,feat_data, header="", delimiter=',')
+        pd.DataFrame(feat_data).to_csv(os.path.join(save_path, f"{feat_label}.csv"), mode="a+", index=False, header=False) 
 
     logger.info(f"Pasting files together {paste_command}")
     os.system(paste_command + " -d ',' > " + os.path.join(save_path, "tensors.csv"))

@@ -26,8 +26,8 @@ class EvaluationPackage(object):
         model,
     ) -> None:
 
-        test_tensors_fp = os.path.join(source_path, "train_tensors.csv")
-        test_targets_fp = os.path.join(source_path, f"train_{target}.csv")
+        test_tensors_fp = os.path.join(source_path, "tensors.csv")
+        test_targets_fp = os.path.join(source_path, f"{target}.csv")
 
         # Get Scalers
         tensors_scaler_fp = os.path.join(source_path, "tensors_scaler.pkl")
@@ -38,15 +38,17 @@ class EvaluationPackage(object):
 
         self.predictions = []
         self.targets = []
-        chunksize = 1000000
+        chunksize = 100000
         num_total_predictions = 0
-        if num_samples < chunksize: chunksize = num_samples
+        if num_samples is not None and int(num_samples) < chunksize: 
+            num_samples = int(num_samples)
+            chunksize = num_samples
 
         for test_tensors, test_targets in tqdm(zip(
-            pd.read_csv(test_tensors_fp, chunksize=chunksize), 
-            pd.read_csv(test_targets_fp, chunksize=chunksize), 
+            pd.read_csv(test_tensors_fp, header=None, chunksize=chunksize), 
+            pd.read_csv(test_targets_fp, header=None, chunksize=chunksize), 
         ), "Load test data"):
-            if num_samples is not None and num_total_predictions >= num_samples: break 
+            if num_samples is not None and num_total_predictions >= int(num_samples): break 
 
             test_tensors = test_tensors.to_numpy()
             test_targets = test_targets.to_numpy()

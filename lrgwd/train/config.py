@@ -2,7 +2,7 @@ DEFAULTS = {
     "save_path": "./runs/dev/train",
     "source_path": "./runs/dev/split",
     "batch_size": 256,
-    "chunk_size": 100000,
+    "chunk_size": 500000,
     "model": "baseline",
     "target": "gwfu",
     "epochs": 10,
@@ -12,4 +12,4 @@ DEFAULTS = {
     "learning_rate": .0001,
 }
 
-MONITOR_METRIC = "output_9_loss"
+MONITOR_METRIC = "loss"

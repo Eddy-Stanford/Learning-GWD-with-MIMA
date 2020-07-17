@@ -106,7 +106,7 @@ def split(
     labels_path = os.path.join(source_path, LABELS_FN)
 
     splitter = Splitter(save_path)
-    scaler = Scaler(scaler_info,save_path)
+    scaler = Scaler(scaler_info, save_path)
 
     # Number of samples in each set
     num_test_samples = np.floor(test_split*num_samples)
@@ -122,7 +122,8 @@ def split(
         }
     )
 
-    batch_size = min([num_test_samples, num_val_samples, batch_size])
+    sizes = np.array([num_test_samples, num_val_samples, batch_size])
+    batch_size = np.min(sizes[np.nonzero(sizes)])
 
     num_read = 0
     for tensor_chunk, gwfu_chunk, gwfv_chunk in tqdm(zip(

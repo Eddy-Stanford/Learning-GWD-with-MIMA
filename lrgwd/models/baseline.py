@@ -8,10 +8,27 @@ from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, BatchNormalization 
 
 tf.autograph.set_verbosity(3, True)
+# tf.compat.v1.enable_eager_execution()
 
 class BaseLine():
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
+        self.loss = tf.keras.losses.LogCosh(reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="log_cosh")
+
+    def eager_function(self, loss, y_actual, y_pred):
+        temp_loss = loss.numpy()
+        # print("LOSS: ", loss)
+        if temp_loss >= 150000:
+            import pdb
+            pdb.set_trace()
+            print(y_actual)
+            print(y_pred)
+
+
+    def custom_loss(self, y_actual, y_pred):
+        loss = self.loss(y_actual, y_pred)
+        # tf.py_function(self.eager_function, inp=[loss, y_actual, y_pred], Tout=[])
+        return loss
 
     def build(self, input_shape=Tuple[int], output_shape=Tuple[int], learning_rate=0.001):
         # Generate Layers
@@ -23,23 +40,24 @@ class BaseLine():
 
         # Optimizer
         adam_optimizer = tf.keras.optimizers.Adam(
-            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
+            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False, clipvalue=.1,
         )
 
         # Compile
         self.model.compile(
+            # eagerly=True,
             # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
             # RMSProp (reduces variation in steps)
             optimizer=adam_optimizer,
-            loss=loss_dict, # tf.keras.losses.LogCosh(reduction="auto", name="log_cosh"),
+            loss=tf.keras.losses.LogCosh(reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="log_cosh"),
             metrics=[
                 # Fits to Median: robust to unwanted outliers
                 tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
-                # Fits to Mean: robust to wanted outliers
+                # # Fits to Mean: robust to wanted outliers
                 tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
-                # Twice diferentiable, combination of MSE and MAE
+                # # Twice diferentiable, combination of MSE and MAE
                 tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
-                # STD of residuals 
+                # # STD of residuals 
                 tf.keras.metrics.RootMeanSquaredError(
                     name="root_mean_squared_error", dtype=None
                 )

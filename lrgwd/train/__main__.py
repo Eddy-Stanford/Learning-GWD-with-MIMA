@@ -8,7 +8,9 @@ from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
 
-
+"""
+Trains the model outlined in baseline. 
+"""
 @click.command("train")
 @click.option(
     "--save-path",
@@ -20,6 +22,7 @@ from lrgwd.utils.tracking import tracking
 @click.option(
     "--source-path",
     default=DEFAULTS["source_path"],
+    multiple=True,
     show_default=True,
     type=str,
     help="File path to split datasets",
@@ -89,6 +92,10 @@ from lrgwd.utils.tracking import tracking
     default=DEFAULTS["learning_rate"],
     show_default=True,
 )
+@click.option(
+    "--scaler-path",
+    help="Path to Standard scaler",
+)
 @click.option("--use-multiprocessing/--no-use-multiprocessing", default=True)
 @click.option("--verbose/--no-verbose", default=True)
 def main(**params):
@@ -103,40 +110,43 @@ def main(**params):
     ):
         target = params["target"]
         os.makedirs(params["save_path"], exist_ok=True)  
-        metadata = get_metadata(params["source_path"])
+        metadata = get_metadata(params["source_path"][0])
 
         # Get Model
         Model = get_model(params["model"])
         model = Model.build(metadata["input_shape"], metadata["output_shape"], params["learning_rate"])
 
         # Get scalers
-        tensors_scaler = from_pickle(os.path.join(params["source_path"], "tensors_scaler.pkl")) 
-        target_scaler = from_pickle(os.path.join(params["source_path"], f"{target}_scaler.pkl")) 
+        tensors_scaler = from_pickle(os.path.join(params["scaler_path"], "tensors_scaler.pkl")) 
+        target_scaler = from_pickle(os.path.join(params["scaler_path"], f"{target}_scaler.pkl")) 
         
 
         # Create data generators
         train_generator = DataGenerator(
-            tensors_filepath=os.path.join(params["source_path"], "train_tensors.csv"),
-            target_filepath=os.path.join(params["source_path"], f"train_{target}.csv"),
+            tensors_filepath=[os.path.join(path, "train_tensors.csv") for path in params["source_path"]],
+            target_filepath=[os.path.join(path, f"train_{target}.csv") for path in params["source_path"]],
             batch_size=params["batch_size"],
             chunk_size=params["chunk_size"],
-            num_samples=metadata["total_samples"],
+            num_samples=metadata["total_samples"]*len(params["source_path"]),
             tensors_scaler=tensors_scaler,
             target_scaler=target_scaler,
+            name="train",
         )
 
         val_generator = DataGenerator(
-            tensors_filepath=os.path.join(params["source_path"], "val_tensors.csv"),
-            target_filepath=os.path.join(params["source_path"], f"val_{target}.csv"),
+            tensors_filepath=[os.path.join(path, "val_tensors.csv") for path in params["source_path"]],
+            target_filepath=[os.path.join(path, f"val_{target}.csv") for path in params["source_path"]],
             batch_size=params["batch_size"],
             chunk_size=params["chunk_size"],
-            num_samples=metadata["total_samples"],
+            num_samples=metadata["total_samples"]*len(params["source_path"]),
             tensors_scaler=tensors_scaler,
             target_scaler=target_scaler,
+            name="val",
         )
 
         # Fit Model
         callbacks = get_callbacks(params["save_path"], params["model"])
+        # model.run_eagerly = True
         history = model.fit(
             x=train_generator,
             validation_data=val_generator,

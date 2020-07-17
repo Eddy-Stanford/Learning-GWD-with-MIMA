@@ -65,9 +65,10 @@ def plot_predictions_vs_truth(
     minlim = np.min([np.min(predictions), np.min(targets)])
     maxlim = np.max([np.max(predictions), np.max(targets)])
 
+    labels = [.1, .2, .3, .5, .7, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 70.0, 100.0, 200.0, 300.0]
     for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
-        plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{i}')
+        plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{labels[i]}')
 
     plt.xlabel("True Values [m/s^2]")
     plt.ylabel("Predictions [m/s^2]")
