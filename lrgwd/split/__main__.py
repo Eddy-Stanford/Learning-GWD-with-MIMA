@@ -14,9 +14,9 @@ from lrgwd.utils.tracking import tracking
 
 """
 Splits csv from extractor into train, validation, and test sets. This command
-also either creates a standard scaler or loads a standard scaler trains it. 
+also either creates a standard scaler or loads a standard scaler trains it.
 
-Example Usage: 
+Example Usage:
 python lrgwd split \
     --save-path ./runs/data/split \
     --source-path ./runs/data/extractor \
@@ -24,7 +24,7 @@ python lrgwd split \
     --val-split .05 \
     --num-samples 1000000 \
     --load-scaler True \
-    --scaler-path ./runs/data/split_dev 
+    --scaler-path ./runs/data/split_dev
 """
 @click.command("split")
 @click.option(
@@ -48,6 +48,12 @@ python lrgwd split \
     help="Using 3d feature matricies",
 )
 @click.option(
+    "--skip-labels/--no-skip-labels",
+    default=True,
+    show_default=True,
+    help="Don't split labels"
+)
+@click.option(
     "--test-split",
     default=DEFAULTS["test_split"],
     show_default=True,
@@ -60,7 +66,7 @@ python lrgwd split \
     help="Fraction between 0.0 and 1.0 of data to reserve for validation"
 )
 @click.option(
-    "--preprocess/--no-preprocess", 
+    "--preprocess/--no-preprocess",
     default=True,
     show_default=True,
     help="Standardize and Normalize data"
@@ -91,7 +97,7 @@ python lrgwd split \
     help="Track run using mlflow"
 )
 @click.option(
-    "--scaler-path", 
+    "--scaler-path",
     default=DEFAULTS["save_path"],
 )
 @click.option("--load-scaler/--no-load-scaler", default=False)
@@ -105,9 +111,9 @@ def main(**params):
     ):
         os.makedirs(params["save_path"], exist_ok=True)
 
-        if params["num_samples"] is None: 
+        if params["num_samples"] is None:
             num_samples = int(get_num_samples(params["source_path"]))
-        else: 
+        else:
             num_samples = int(params["num_samples"])
 
         if params["verbose"]:
@@ -122,6 +128,7 @@ def main(**params):
             cnn_features=params["using_cnn_features"],
             batch_size=params["batch_size"],
             scaler_info={"load": params["load_scaler"], "path": params["scaler_path"]},
+            skip_labels=params["skip_labels"],
         )
 
 

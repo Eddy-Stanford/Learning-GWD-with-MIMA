@@ -7,7 +7,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 
-from tqdm import tqdm 
+from tqdm import tqdm
 from scipy.stats import linregress
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
@@ -17,8 +17,9 @@ from lrgwd.utils.logger import logger
 
 
 class EvaluationPackage(object):
-    def __init__(self, 
+    def __init__(self,
         source_path: Union[os.PathLike, str],
+        scaler_path: Union[os.PathLike, str],
         num_samples: Union[None, float],
         target: str,
         remove_outliers: Union[str, float],
@@ -30,25 +31,25 @@ class EvaluationPackage(object):
         test_targets_fp = os.path.join(source_path, f"{target}.csv")
 
         # Get Scalers
-        tensors_scaler_fp = os.path.join(source_path, "tensors_scaler.pkl")
+        tensors_scaler_fp = os.path.join(scaler_path, "tensors_scaler.pkl")
         tensors_scaler = from_pickle(tensors_scaler_fp)
 
-        target_scaler_fp = os.path.join(source_path, f"{target}_scaler.pkl")
+        target_scaler_fp = os.path.join(scaler_path, f"{target}_scaler.pkl")
         target_scaler = from_pickle(target_scaler_fp)
 
         self.predictions = []
         self.targets = []
         chunksize = 100000
         num_total_predictions = 0
-        if num_samples is not None and int(num_samples) < chunksize: 
+        if num_samples is not None and int(num_samples) < chunksize:
             num_samples = int(num_samples)
             chunksize = num_samples
 
         for test_tensors, test_targets in tqdm(zip(
-            pd.read_csv(test_tensors_fp, header=None, chunksize=chunksize), 
-            pd.read_csv(test_targets_fp, header=None, chunksize=chunksize), 
+            pd.read_csv(test_tensors_fp, header=None, chunksize=chunksize),
+            pd.read_csv(test_targets_fp, header=None, chunksize=chunksize),
         ), "Load test data"):
-            if num_samples is not None and num_total_predictions >= int(num_samples): break 
+            if num_samples is not None and num_total_predictions >= int(num_samples): break
 
             test_tensors = test_tensors.to_numpy()
             test_targets = test_targets.to_numpy()
@@ -59,12 +60,12 @@ class EvaluationPackage(object):
             self.targets.append(test_targets)
             self.predictions.append(
                 self.predict(
-                    model=model, 
+                    model=model,
                     tensors=test_tensors,
                     target_scaler=target_scaler,
                 )
             )
-        
+
             num_total_predictions += chunksize
 
         self.predictions = np.concatenate(np.array(self.predictions), axis=0)
@@ -73,7 +74,7 @@ class EvaluationPackage(object):
 
         # Removes outliers and returns dictionary keyed on each pressure level
         self.plevel_predictions, self.plevel_targets = self.split_predictions_on_plevel(
-            predictions=self.predictions, 
+            predictions=self.predictions,
             targets=self.targets,
             outliers=remove_outliers,
         )
@@ -85,7 +86,7 @@ class EvaluationPackage(object):
                 "predictions": self.predictions,
                 "targets": self.targets,
             }
-        )        
+        )
 
 
     def predict(self, model, tensors, target_scaler):
@@ -95,13 +96,13 @@ class EvaluationPackage(object):
 
         return predictions
 
-    
-    def split_predictions_on_plevel(self, 
-        predictions: np.ndarray, 
-        targets: np.ndarray, 
+
+    def split_predictions_on_plevel(self,
+        predictions: np.ndarray,
+        targets: np.ndarray,
         outliers: Union[None, float]
     ):
-        # Split predictions per level 
+        # Split predictions per level
         plevel_predictions = {}
         plevel_targets = {}
 
@@ -117,14 +118,14 @@ class EvaluationPackage(object):
                     targets=slice_targets,
                     outliers=float(outliers),
                 )
-            
+
             plevel_predictions[f"plevel_{i}"] = slice_predictions
             plevel_targets[f"plevel_{i}"] = slice_targets
-        
+
         return plevel_predictions, plevel_targets
 
 
-    def remove_outliers(self, 
+    def remove_outliers(self,
         predictions: np.ndarray,
         targets: np.ndarray,
         outliers: float
@@ -141,7 +142,7 @@ class EvaluationPackage(object):
 
 
 def generate_metrics(
-    predictions: np.ndarray, 
+    predictions: np.ndarray,
     targets: np.ndarray,
     plevel_predictions: Dict[str, np.ndarray],
     plevel_targets: Dict[str, np.ndarray],
@@ -159,7 +160,7 @@ def generate_metrics(
     }
 
     metrics["r_squared"] = calculate_r_squared(
-        test_predictions=plevel_predictions, 
+        test_predictions=plevel_predictions,
         test_targets=plevel_targets,
     )
 

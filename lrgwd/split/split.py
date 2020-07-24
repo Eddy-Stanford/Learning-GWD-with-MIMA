@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 class Splitter():
-    def __init__(self, save_path: Union[os.PathLike, str]):
+    def __init__(self, save_path: Union[os.PathLike, str], skip_labels=True):
         # Save Paths
         self.train_tensors_path = os.path.join(save_path, TRAIN_TENSORS_FN)
         self.train_labels_path = os.path.join(save_path, TRAIN_LABELS_FN)
@@ -34,7 +34,8 @@ class Splitter():
         self.include_train_header = True
         self.include_val_header = True
         self.include_test_header = True
-    
+
+        self.skip_labels = skip_labels
 
     def save_train(
         self,
@@ -44,8 +45,9 @@ class Splitter():
         labels: pd.DataFrame = None
     ):
         tensors.to_csv(self.train_tensors_path, mode='a', header=self.include_train_header, index=False)
-        gwfu.to_csv(self.train_gwfu_path, mode='a', header=self.include_train_header, index=False)
-        gwfv.to_csv(self.train_gwfv_path, mode='a', header=self.include_train_header, index=False)
+        if not self.skip_labels:
+            gwfu.to_csv(self.train_gwfu_path, mode='a', header=self.include_train_header, index=False)
+            gwfv.to_csv(self.train_gwfv_path, mode='a', header=self.include_train_header, index=False)
         if labels != None: labels.to_csv(self.train_labels_path, mode='a', header=self.include_train_header, index=False)
         self.include_train_header = False
 
@@ -57,8 +59,9 @@ class Splitter():
         labels: pd.DataFrame = None
     ):
         tensors.to_csv(self.val_tensors_path, mode='a', header=self.include_val_header, index=False)
-        gwfu.to_csv(self.val_gwfu_path, mode='a', header=self.include_val_header, index=False)
-        gwfv.to_csv(self.val_gwfv_path, mode='a', header=self.include_val_header, index=False)
+        if not self.skip_labels:
+            gwfu.to_csv(self.val_gwfu_path, mode='a', header=self.include_val_header, index=False)
+            gwfv.to_csv(self.val_gwfv_path, mode='a', header=self.include_val_header, index=False)
         if labels != None: labels.to_csv(self.val_labels_path, mode='a', header=self.include_val_header, index=False)
         self.include_val_header = False
 
@@ -90,22 +93,23 @@ def save_metadata(
 
 
 def split(
-    num_samples: int, 
+    num_samples: int,
     test_split: float,
     val_split: float,
     save_path: Union[os.PathLike, str],
     source_path: Union[os.PathLike, str],
     cnn_features: bool,
     batch_size: int,
-    scaler_info: Dict[str, Union[str, bool]]
-): 
+    scaler_info: Dict[str, Union[str, bool]],
+    skip_labels: bool,
+):
     # Source Paths
-    tensors_path = os.path.join(source_path, TENSORS_FN)    
-    gwfu_path = os.path.join(source_path, GWFU_FN)
-    gwfv_path = os.path.join(source_path, GWFV_FN)
+    tensors_path = os.path.join(source_path, TENSORS_FN)
+    gwfu_path = os.path.join(source_path, "../full_features", GWFU_FN)
+    gwfv_path = os.path.join(source_path, "../full_features", GWFV_FN)
     labels_path = os.path.join(source_path, LABELS_FN)
 
-    splitter = Splitter(save_path)
+    splitter = Splitter(save_path, skip_labels)
     scaler = Scaler(scaler_info, save_path)
 
     # Number of samples in each set
@@ -113,7 +117,7 @@ def split(
     num_val_samples = np.floor(val_split*num_samples)
     num_train_samples = num_samples - (num_test_samples + num_val_samples)
     save_metadata(
-        source_path=source_path, 
+        source_path=source_path,
         save_path=save_path,
         metadata={
             "num_test_samples": num_test_samples,
@@ -136,30 +140,30 @@ def split(
         if num_read < num_train_samples:
             splitter.save_train(
                 tensors=tensor_chunk,
-                gwfu=gwfu_chunk, 
-                gwfv=gwfv_chunk, 
+                gwfu=gwfu_chunk,
+                gwfv=gwfv_chunk,
                 # labels=labels_chunk
             )
             scaler.partial_fit(
                 tensors=tensor_chunk,
-                gwfu=gwfu_chunk, 
-                gwfv=gwfv_chunk, 
+                gwfu=gwfu_chunk,
+                gwfv=gwfv_chunk,
             )
         elif num_train_samples <= num_read and num_read < (num_train_samples + num_val_samples):
             splitter.save_val(
                 tensors=tensor_chunk,
-                gwfu=gwfu_chunk, 
-                gwfv=gwfv_chunk, 
+                gwfu=gwfu_chunk,
+                gwfv=gwfv_chunk,
                 # labels=labels_chunk
             )
-        else: 
+        else:
             splitter.save_test(
                 tensors=tensor_chunk,
-                gwfu=gwfu_chunk, 
-                gwfv=gwfv_chunk, 
+                gwfu=gwfu_chunk,
+                gwfv=gwfv_chunk,
                 # labels=labels_chunk
             )
-        
+
         num_read += batch_size
 
         if num_read >= num_samples: break

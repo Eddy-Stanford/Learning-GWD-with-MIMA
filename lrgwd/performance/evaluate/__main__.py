@@ -20,12 +20,12 @@ from lrgwd.utils.tracking import tracking
 from tensorflow import keras
 
 """
-Evaluates the given model using test_tensors.csv from source-path. Creates predicted_vs_true diagrams, 
-histograms, and r^2 values for each pressure level. This command also saves the full set of predictions and 
+Evaluates the given model using test_tensors.csv from source-path. Creates predicted_vs_true diagrams,
+histograms, and r^2 values for each pressure level. This command also saves the full set of predictions and
 target values for future analysis. To evaluate using a subsamples of `test_tensors.csv` using set --num-test-samples.
 To remove outliers according to ther z-score, set --remove-outliers
 
-Example Usage: 
+Example Usage:
 python lrgwd evaluate \
     --save-path ./runs/models/LogCosh/evaluate \
     --source-path ./runs/data/four_years/split \
@@ -47,6 +47,13 @@ python lrgwd evaluate \
     show_default=True,
     type=str,
     help="File path to save evaluation plots"
+)
+@click.option(
+    "--scaler-path",
+    default=DEFAULTS["evaluate"]["source_path"],
+    show_default=True,
+    type=str,
+    help="File path to Standard Scaler"
 )
 @click.option(
     "--source-path",
@@ -102,6 +109,7 @@ def main(**params):
         if params["verbose"]: logger.info("Loading Data and Making Predictions")
         evaluation_package = EvaluationPackage(
             source_path=params["source_path"],
+            scaler_path=params["scaler_path"],
             num_samples=params["num_test_samples"],
             target=params["target"],
             remove_outliers=params["remove_outliers"],

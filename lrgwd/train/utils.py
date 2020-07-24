@@ -25,7 +25,7 @@ from tensorflow.keras.callbacks import (EarlyStopping, ModelCheckpoint,
 def get_model(model: str):
     if model == "baseline":
         return BaseLine()
-    else: 
+    else:
         raise Exception("In valid model. Pick one of: f{VALID_MODELS}")
 
 
@@ -54,7 +54,6 @@ def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baselin
             save_best_only=True,
             monitor=MONITOR_METRIC,
             mode="min",
-            save_freq='epoch', 
         ),
         TensorBoard(log_dir=os.path.join(save_path,"logs")),
         TerminateOnNaN()
@@ -63,15 +62,15 @@ def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baselin
 
 class DataGenerator(utils.Sequence):
     def __init__(
-        self, 
+        self,
         tensors_scaler,
         target_scaler,
         tensors_filepath: List[Union[os.PathLike, str]],
         target_filepath: List[Union[os.PathLike, str]],
         num_samples: int,
         name: str,
-        batch_size: int = 32, 
-        chunk_size: int = 500, 
+        batch_size: int = 32,
+        chunk_size: int = 500,
     ):
         self.batch_size=batch_size
         self.chunk_size=chunk_size
@@ -79,14 +78,14 @@ class DataGenerator(utils.Sequence):
         self.target_filepath = target_filepath
         self.num_samples = num_samples
         self.tensors_scaler = tensors_scaler
-        self.target_scaler = target_scaler 
+        self.target_scaler = target_scaler
 
         self.name = name
         self.num_files = len(self.tensors_filepath)
-        self.generators = self._create_generators() 
+        self.generators = self._create_generators()
         self.lock = threading.Lock()
         self.batch_num = 0
-        
+
 
     def _create_generators(self):
         generators = {}
@@ -97,14 +96,14 @@ class DataGenerator(utils.Sequence):
 
             generators[(tensors_fp, target_fp, batch_size)] = self._get_batch(tensors_fp, target_fp, batch_size)
 
-        
+
         return generators
 
     def __len__(self):
-        # Denotes the number of batches per epoch 
+        # Denotes the number of batches per epoch
         return int(np.floor(self.num_samples) / self.batch_size)
 
-    
+
     def __getitem__(self, index):
         """
         Generate one batch of data
@@ -114,7 +113,7 @@ class DataGenerator(utils.Sequence):
                 X, y = [], []
                 for key, gen in self.generators.items():
                     tensors_fp, target_fp, batch_size = key
-                    try: 
+                    try:
                         X_gen, y_gen = next(gen)
                     except StopIteration:
                         gen = self._get_batch(tensors_fp, target_fp, batch_size)
@@ -122,11 +121,11 @@ class DataGenerator(utils.Sequence):
                         X_gen, y_gen = next(gen)
                     X.append(X_gen)
                     for i in range(len(y_gen)):
-                        if len(y) > i: 
+                        if len(y) > i:
                             y[i] = np.concatenate([y[i], y_gen[i]], axis=0)
-                        else: 
+                        else:
                             y.append(y_gen[i])
-                X = np.concatenate(X, axis=0) 
+                X = np.concatenate(X, axis=0)
 
                 return (X, y)
 
@@ -136,7 +135,7 @@ class DataGenerator(utils.Sequence):
             pd.read_csv(tensors_filepath, header=0, chunksize=self.chunk_size),
             pd.read_csv(target_filepath, header=0, chunksize=self.chunk_size)
         ):
-            # create batch from chunk 
+            # create batch from chunk
             tensors_chunk, target_chunk = (tensors_chunk.to_numpy(), target_chunk.to_numpy())
             # standardize chunk
             tensors_chunk = self.tensors_scaler.transform(tensors_chunk)
@@ -144,7 +143,7 @@ class DataGenerator(utils.Sequence):
 
             # convert to tf Dataset
             train_dataset = tf.data.Dataset.from_tensor_slices((tensors_chunk, target_chunk))
-            
+
             train_dataset = train_dataset.shuffle(buffer_size=self.chunk_size).batch(batch_size, drop_remainder=True)
             for train_batch, target_batch in train_dataset:
                 target_batch = np.hsplit(target_batch, NON_ZERO_GWD_PLEVELS)
