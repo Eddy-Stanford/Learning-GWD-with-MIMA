@@ -8,6 +8,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+print("PACKAGES: ", find_packages(where="lrgwd"))
+
 setup(
     name='lrgwd',
     version='0.0.1',
@@ -18,7 +20,23 @@ setup(
     author='Zac Espinosa',
     author_email='zespinos@stanford.edu',
     python_requires='>=3.6.9, <4',
-    install_requires=[
+    packages=[
+        'lrgwd',
+        'lrgwd.ingestor',
+        'lrgwd.extractor',
+        'lrgwd.split',
+        'lrgwd.train',
+        'lrgwd.performance.evaluate',
+        'lrgwd.performance.compare',
+    ],
+    entry_points="""
+        [console_scripts]
+        lrgwd=lrgwd.__main__.py:cli
+    """,
+)
+
+"""
+install_requires=[Vjj
         'mlflow',
         'scipy',
         'numpy',
@@ -27,4 +45,4 @@ setup(
         'tqdm',
         'sklearn',
     ],
-)
+"""

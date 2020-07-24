@@ -7,7 +7,7 @@ DEFAULTS = {
         "num_steps": 64,
     },
     "num_samples": None,
-    "plevels_included": 22,
+    "plevels_included": 40,
     "features": ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
 }
 

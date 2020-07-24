@@ -1,5 +1,5 @@
 """
-DATA INFO (Name, Shape): 
+DATA INFO (Name, Shape):
 
 Longitude (128,)
 Longitude Edges (129,)
@@ -20,7 +20,7 @@ Gravity wave forcing on mean meridional flow, gwfv_cgwd (1440,22,64,128)
 MIMA = {
     "gwfu": {
         "time": 1440,
-        "plevel": 22,
+        "plevel": 40,
         "lat": 64,
         "lon": 128
     }
@@ -29,7 +29,7 @@ MIMA = {
 FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "level", "slp", "gwfu_cgwd", "gwfv_cgwd"]
 
 # TOP 18 pressure levels have non zero gwd values
-NON_ZERO_GWD_PLEVELS = 18
+NON_ZERO_GWD_PLEVELS = 33
 
 TENSOR = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "gwfu_cgwd", "gwfv_cgwd"]
 VERTICAL_COLUMN_FEATURES = ["slp", "lat", "lon"]
@@ -49,7 +49,7 @@ TARGET_FEATURES = ["gwfu_cgwd", "gwfv_cgwd"]
 #         "shape": (1440, 22, 64, 128),
 #     },
 #     "hght": {
-#         "units": 
+#         "units":
 #         "long_name":
 #     },
 #     "ucomp": {

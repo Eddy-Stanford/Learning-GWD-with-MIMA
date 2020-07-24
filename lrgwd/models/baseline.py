@@ -5,7 +5,7 @@ import tensorflow as tf
 from lrgwd.config import NON_ZERO_GWD_PLEVELS
 from lrgwd.models.config import BLOCK_PARAMS, LOSS_ARRAY
 from tensorflow.keras import regularizers
-from tensorflow.keras.layers import Dense, BatchNormalization 
+from tensorflow.keras.layers import Dense, BatchNormalization
 
 tf.autograph.set_verbosity(3, True)
 # tf.compat.v1.enable_eager_execution()
@@ -34,7 +34,7 @@ class BaseLine():
         # Generate Layers
         inputs = self.add_input_layer(input_shape)
         hidden_layers = self.add_blocks(inputs)
-        outputs, loss_dict = self.add_output_layer(output_shape, hidden_layers)
+        outputs = self.add_output_layer(output_shape, hidden_layers)
 
         self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
@@ -57,7 +57,7 @@ class BaseLine():
                 tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
                 # # Twice diferentiable, combination of MSE and MAE
                 tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
-                # # STD of residuals 
+                # # STD of residuals
                 tf.keras.metrics.RootMeanSquaredError(
                     name="root_mean_squared_error", dtype=None
                 )
@@ -70,7 +70,7 @@ class BaseLine():
 
     def add_input_layer(self, input_shape) -> tf.keras.Input:
         return tf.keras.Input(shape=input_shape)
-        
+
 
     def add_blocks(self, inputs: tf.keras.Input) -> Dense:
         prev_layer = inputs
@@ -83,25 +83,24 @@ class BaseLine():
     def add_block(self, units: int, prev_layer: tf.keras.Input) -> Dense:
         for layers_in_block in range(BLOCK_PARAMS["layers_in_block"]):
             prev_layer = Dense(
-                units,  
-                activation="relu", 
+                units,
+                activation="relu",
                 # kernel_regularizer=regularizers.l2(0.001),
                 kernel_initializer=tf.keras.initializers.GlorotNormal(), # Xavier
             )(prev_layer)
             # prev_layer = BatchNormalization()(prev_layer)
 
-        
+
         return prev_layer
 
 
-    def add_output_layer(self, 
-        output_shape: Tuple[int], 
+    def add_output_layer(self,
+        output_shape: Tuple[int],
         hidden_layers: Dense
     ) -> List[Dense]:
         output_layers = []
-        loss_dict = {}
         plevel_specific = hidden_layers
-        for i in range(NON_ZERO_GWD_PLEVELS): 
+        for i in range(NON_ZERO_GWD_PLEVELS):
             # Create PLEVEL specific hidden layer
             for j, units in enumerate(BLOCK_PARAMS["units_in_plevel_hidden_layers"]):
                 plevel_specific = Dense(
@@ -113,12 +112,11 @@ class BaseLine():
                 )(plevel_specific)
                 # if j != (len(BLOCK_PARAMS["units_in_plevel_hidden_layers"]) - 1):
                 #     plevel_specific = BatchNormalization()(plevel_specific)
-                
+
             # Create Output layer
             name = f"output_{i}"
             output_layers.append(Dense(units=1, name=name)(plevel_specific))
-            loss_dict[name] = LOSS_ARRAY[i]
 
-            plevel_specific = hidden_layers 
+            plevel_specific = hidden_layers
 
-        return output_layers, loss_dict
+        return output_layers

@@ -9,7 +9,7 @@ from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
 
 """
-Trains the model outlined in baseline. 
+Trains the model outlined in baseline.
 """
 @click.command("train")
 @click.option(
@@ -109,22 +109,22 @@ def main(**params):
         tracking=params["tracking"]
     ):
         target = params["target"]
-        os.makedirs(params["save_path"], exist_ok=True)  
+        os.makedirs(params["save_path"], exist_ok=True)
         metadata = get_metadata(params["source_path"][0])
 
         # Get Model
         Model = get_model(params["model"])
-        model = Model.build(metadata["input_shape"], metadata["output_shape"], params["learning_rate"])
+        model = Model.build((metadata["input_shape"],), metadata["output_shape"], params["learning_rate"])
 
         # Get scalers
-        tensors_scaler = from_pickle(os.path.join(params["scaler_path"], "tensors_scaler.pkl")) 
-        target_scaler = from_pickle(os.path.join(params["scaler_path"], f"{target}_scaler.pkl")) 
-        
+        tensors_scaler = from_pickle(os.path.join(params["scaler_path"], "tensors_scaler.pkl"))
+        target_scaler = from_pickle(os.path.join(params["scaler_path"], f"{target}_scaler.pkl"))
+
 
         # Create data generators
         train_generator = DataGenerator(
             tensors_filepath=[os.path.join(path, "train_tensors.csv") for path in params["source_path"]],
-            target_filepath=[os.path.join(path, f"train_{target}.csv") for path in params["source_path"]],
+            target_filepath=[os.path.join(path, "../full_features", f"train_{target}.csv") for path in params["source_path"]],
             batch_size=params["batch_size"],
             chunk_size=params["chunk_size"],
             num_samples=metadata["total_samples"]*len(params["source_path"]),
@@ -135,7 +135,7 @@ def main(**params):
 
         val_generator = DataGenerator(
             tensors_filepath=[os.path.join(path, "val_tensors.csv") for path in params["source_path"]],
-            target_filepath=[os.path.join(path, f"val_{target}.csv") for path in params["source_path"]],
+            target_filepath=[os.path.join(path, "../full_features", f"val_{target}.csv") for path in params["source_path"]],
             batch_size=params["batch_size"],
             chunk_size=params["chunk_size"],
             num_samples=metadata["total_samples"]*len(params["source_path"]),

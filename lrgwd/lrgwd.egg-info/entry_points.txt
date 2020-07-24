@@ -1,0 +1,4 @@
+
+        [console_scripts]
+        lrgwd=lrgwd.__main__.py:cli
+    
