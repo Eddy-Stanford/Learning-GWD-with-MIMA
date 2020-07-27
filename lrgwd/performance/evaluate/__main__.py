@@ -102,7 +102,8 @@ def main(**params):
 
         # Load Model
         if params["verbose"]: logger.info("Loading Model")
-        model = keras.models.load_model(os.path.join(params["model_path"]))
+        model = keras.models.load_model(os.path.join(params["model_path"]), compile=False)
+        model.compile(loss="logcosh", optimizer="adam")
         model.summary()
 
         # Load Test Data

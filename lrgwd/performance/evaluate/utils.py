@@ -28,7 +28,7 @@ class EvaluationPackage(object):
     ) -> None:
 
         test_tensors_fp = os.path.join(source_path, "tensors.csv")
-        test_targets_fp = os.path.join(source_path, f"{target}.csv")
+        test_targets_fp = os.path.join(source_path, "../", f"{target}.csv")
 
         # Get Scalers
         tensors_scaler_fp = os.path.join(scaler_path, "tensors_scaler.pkl")

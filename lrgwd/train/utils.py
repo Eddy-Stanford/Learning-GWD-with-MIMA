@@ -1,17 +1,12 @@
 import os
 import random
 from typing import Any, List, Tuple, Union
+import traceback
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import threading
-
-from lrgwd.config import NON_ZERO_GWD_PLEVELS
-from lrgwd.models.baseline import BaseLine
-from lrgwd.models.config import VALID_MODELS
-from lrgwd.train.config import MONITOR_METRIC
-from lrgwd.utils.io import from_pickle
 from sklearn.utils import shuffle
 from tensorflow.keras import utils
 from tensorflow.keras.callbacks import \
@@ -19,6 +14,14 @@ from tensorflow.keras.callbacks import \
 from tensorflow.keras.callbacks import TerminateOnNaN  # Check if needed
 from tensorflow.keras.callbacks import (EarlyStopping, ModelCheckpoint,
                                         ReduceLROnPlateau, TensorBoard)
+
+from lrgwd.config import NON_ZERO_GWD_PLEVELS
+from lrgwd.models.baseline import BaseLine, compile_model
+from lrgwd.models.config import VALID_MODELS
+from lrgwd.train.config import MONITOR_METRIC
+from lrgwd.utils.io import from_pickle
+from lrgwd.utils.logger import logger
+
 
 
 # TODO: Rewrite so this does not depend on string literals (i.e. baseline)
@@ -36,6 +39,16 @@ def get_metadata(source_path: Union[os.PathLike, str]):
     metadata_fn = os.path.join(source_path, "metadata.pkl")
     metadata = from_pickle(metadata_fn)
     return metadata
+
+
+def load_model(model_path: str, learning_rate: float):
+    try:
+        model = tf.keras.models.load_model(model_path, compile=False)
+        model = compile_model(model, learning_rate)
+        return model
+    except:
+        traceback.print_exc()
+        logger.error(f"Failed to load model: {model_path}")
 
 
 def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baseline"):
@@ -71,6 +84,7 @@ class DataGenerator(utils.Sequence):
         name: str,
         batch_size: int = 32,
         chunk_size: int = 500,
+        train_with_random: bool = False,
     ):
         self.batch_size=batch_size
         self.chunk_size=chunk_size
@@ -82,6 +96,7 @@ class DataGenerator(utils.Sequence):
 
         self.name = name
         self.num_files = len(self.tensors_filepath)
+        self.train_with_random = train_with_random
         self.generators = self._create_generators()
         self.lock = threading.Lock()
         self.batch_num = 0
@@ -94,7 +109,7 @@ class DataGenerator(utils.Sequence):
             batch_size = int(np.floor(self.batch_size / self.num_files))
             # if i == (self.num_files - 1): batch_size += 1
 
-            generators[(tensors_fp, target_fp, batch_size)] = self._get_batch(tensors_fp, target_fp, batch_size)
+            generators[(tensors_fp, target_fp, batch_size)] = self._get_batch(tensors_fp, target_fp, batch_size, self.train_with_random)
 
 
         return generators
@@ -116,7 +131,7 @@ class DataGenerator(utils.Sequence):
                     try:
                         X_gen, y_gen = next(gen)
                     except StopIteration:
-                        gen = self._get_batch(tensors_fp, target_fp, batch_size)
+                        gen = self._get_batch(tensors_fp, target_fp, batch_size, self.train_with_random)
                         self.generators[key] = gen
                         X_gen, y_gen = next(gen)
                     X.append(X_gen)
@@ -130,7 +145,7 @@ class DataGenerator(utils.Sequence):
                 return (X, y)
 
 
-    def _get_batch(self, tensors_filepath, target_filepath, batch_size):
+    def _get_batch(self, tensors_filepath, target_filepath, batch_size, train_with_random):
         for tensors_chunk, target_chunk in zip(
             pd.read_csv(tensors_filepath, header=0, chunksize=self.chunk_size),
             pd.read_csv(target_filepath, header=0, chunksize=self.chunk_size)
@@ -147,5 +162,9 @@ class DataGenerator(utils.Sequence):
             train_dataset = train_dataset.shuffle(buffer_size=self.chunk_size).batch(batch_size, drop_remainder=True)
             for train_batch, target_batch in train_dataset:
                 target_batch = np.hsplit(target_batch, NON_ZERO_GWD_PLEVELS)
+
+                if train_with_random:
+                    random_batch = np.random.normal(loc=0.0, scale=1.0, size=train_batch.shape)
+                    train_batch = tf.convert_to_tensor(random_batch)
 
                 yield train_batch, target_batch

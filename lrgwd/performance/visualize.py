@@ -14,12 +14,12 @@ from sklearn.metrics import mean_absolute_error
 
 
 def plot_predictions_vs_truth_per_level(
-    predictions: np.ndarray, 
+    predictions: np.ndarray,
     targets: np.ndarray,
     title: str,
     color: str,
     save_path: Union[os.PathLike, str],
-): 
+):
     minlim = np.min([np.min(predictions), np.min(targets)])
     maxlim = np.max([np.max(targets), np.max(predictions)])
 
@@ -42,17 +42,17 @@ def plot_predictions_vs_truth_per_level(
 def plot_predictions_vs_truth(
     predictions: np.ndarray,
     targets: np.ndarray,
-    plevel_predictions: Dict[str, np.ndarray], 
+    plevel_predictions: Dict[str, np.ndarray],
     plevel_targets: Dict[str, np.ndarray],
     save_path: Union[os.PathLike, str],
 ) -> None:
     num_plevels = predictions[0].shape[0]
-    colors = cm.rainbow(np.linspace(0,1, num_plevels)) 
+    colors = cm.rainbow(np.linspace(0,1, num_plevels))
 
     for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         level_predictions, level_targets = values
         plot_predictions_vs_truth_per_level(
-            predictions=level_predictions, 
+            predictions=level_predictions,
             targets=level_targets,
             title=str(i),
             color=colors[i],
@@ -65,7 +65,12 @@ def plot_predictions_vs_truth(
     minlim = np.min([np.min(predictions), np.min(targets)])
     maxlim = np.max([np.max(predictions), np.max(targets)])
 
-    labels = [.1, .2, .3, .5, .7, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 70.0, 100.0, 200.0, 300.0]
+    #labels = [.1, .2, .3, .5, .7, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0, 50.0, 70.0, 100.0, 200.0, 300.0]
+    labels = [1.80e-01, 5.60e-01, 7.20e-01, 9.40e-01, 1.21e+00, 1.57e+00, 2.02e+00, 2.60e+00,
+               3.32e+00, 4.25e+00, 5.40e+00, 6.85e+00, 8.68e+00, 1.09e+01, 1.38e+01, 1.73e+01,
+               2.16e+01, 2.68e+01, 3.32e+01, 4.11e+01, 5.07e+01, 6.22e+01, 7.60e+01, 9.24e+01,
+               1.12e+02, 1.35e+02, 1.62e+02, 1.94e+02, 2.31e+02, 2.73e+02, 3.21e+02, 3.75e+02,
+               4.36e+02, 5.03e+02, 5.77e+02, 6.55e+02, 7.37e+02, 8.21e+02, 9.02e+02, 9.71e+02]
     for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
         plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{labels[i]}')
@@ -77,7 +82,7 @@ def plot_predictions_vs_truth(
     plt.ylim(lims)
     _ = plt.plot(lims, lims)
     plt.legend()
-    
+
     # Make figures full screen
     fig.set_size_inches(32, 18)
     fig.savefig(os.path.join(save_path, f"aggregate_predictions_vs_truth.png"))
@@ -86,9 +91,9 @@ def plot_predictions_vs_truth(
 
 def plot_distributions_per_level(
     plevel_predictions: Dict[str, np.ndarray],
-    plevel_targets: Dict[str, np.ndarray], 
+    plevel_targets: Dict[str, np.ndarray],
     save_path: Union[os.PathLike, str],
-) -> None: 
+) -> None:
     # Iterate through each pressure level
     for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
@@ -98,9 +103,9 @@ def plot_distributions_per_level(
         plt.hist(predictions, bins, alpha=0.5, label='predictions', density=True)
         plt.hist(targets, bins, alpha=0.5, label='targets', density=True)
         # plt.hist(
-        #     [predictions, targets], 
-        #     bins=bins, 
-        #     density=True, 
+        #     [predictions, targets],
+        #     bins=bins,
+        #     density=True,
         #     label=["predictions", "targets"]
         # )
 
@@ -118,7 +123,7 @@ def plot_distributions_per_level(
 def plot_r_squared(
     r_squared: List[float],
     save_path: Union[os.PathLike, str],
-) -> None: 
+) -> None:
     fig = plt.figure(figsize=(8,6))
     plevels = list(range(len(r_squared)))
     plt.plot(plevels, r_squared)
@@ -159,7 +164,7 @@ def plot_r_squared(
 #         )
 #         use_labels = False
 
-    
+
 #     fig.legend()
 #     fig.savefig(os.path.join(save_path, "metrics.png"))
 #     plt.close(fig)
