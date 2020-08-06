@@ -105,8 +105,8 @@ def split(
 ):
     # Source Paths
     tensors_path = os.path.join(source_path, TENSORS_FN)
-    gwfu_path = os.path.join(source_path, "../full_features", GWFU_FN)
-    gwfv_path = os.path.join(source_path, "../full_features", GWFV_FN)
+    gwfu_path = os.path.join(source_path, GWFU_FN)
+    gwfv_path = os.path.join(source_path, GWFV_FN)
     labels_path = os.path.join(source_path, LABELS_FN)
 
     splitter = Splitter(save_path, skip_labels)

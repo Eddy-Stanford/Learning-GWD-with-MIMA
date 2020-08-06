@@ -25,10 +25,11 @@ class EvaluationPackage(object):
         remove_outliers: Union[str, float],
         save_path: Union[os.PathLike, str],
         model,
+        evaluate_with_random: bool = False,
     ) -> None:
 
         test_tensors_fp = os.path.join(source_path, "tensors.csv")
-        test_targets_fp = os.path.join(source_path, "../", f"{target}.csv")
+        test_targets_fp = os.path.join(source_path, "../features", f"{target}.csv")
 
         # Get Scalers
         tensors_scaler_fp = os.path.join(scaler_path, "tensors_scaler.pkl")
@@ -56,6 +57,8 @@ class EvaluationPackage(object):
 
             # Transform Targets
             test_tensors = tensors_scaler.transform(test_tensors)
+            if evaluate_with_random:
+                test_tensors = np.random.normal(loc=0.0, scale=1.0, size=test_tensors.shape)
 
             self.targets.append(test_targets)
             self.predictions.append(

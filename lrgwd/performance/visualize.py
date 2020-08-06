@@ -70,7 +70,7 @@ def plot_predictions_vs_truth(
                3.32e+00, 4.25e+00, 5.40e+00, 6.85e+00, 8.68e+00, 1.09e+01, 1.38e+01, 1.73e+01,
                2.16e+01, 2.68e+01, 3.32e+01, 4.11e+01, 5.07e+01, 6.22e+01, 7.60e+01, 9.24e+01,
                1.12e+02, 1.35e+02, 1.62e+02, 1.94e+02, 2.31e+02, 2.73e+02, 3.21e+02, 3.75e+02,
-               4.36e+02, 5.03e+02, 5.77e+02, 6.55e+02, 7.37e+02, 8.21e+02, 9.02e+02, 9.71e+02]
+               4.36e+02] #5.03e+02, 5.77e+02, 6.55e+02, 7.37e+02, 8.21e+02, 9.02e+02, 9.71e+02]
     for i, values in enumerate(zip(plevel_predictions.values(), plevel_targets.values())):
         predictions, targets = values
         plt.scatter(targets, predictions, color=colors[i], label=f'plevel_{labels[i]}')

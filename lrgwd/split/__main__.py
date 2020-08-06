@@ -49,7 +49,7 @@ python lrgwd split \
 )
 @click.option(
     "--skip-labels/--no-skip-labels",
-    default=True,
+    default=False,
     show_default=True,
     help="Don't split labels"
 )
