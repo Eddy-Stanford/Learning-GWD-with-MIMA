@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 class Splitter():
-    def __init__(self, save_path: Union[os.PathLike, str], skip_labels=True):
+    def __init__(self, save_path: Union[os.PathLike, str], skip_labels=False):
         # Save Paths
         self.train_tensors_path = os.path.join(save_path, TRAIN_TENSORS_FN)
         self.train_labels_path = os.path.join(save_path, TRAIN_LABELS_FN)
