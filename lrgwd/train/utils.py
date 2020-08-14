@@ -54,13 +54,13 @@ def load_model(model_path: str, learning_rate: float):
 def get_callbacks(save_path: Union[os.PathLike, str], model_name: str = "baseline"):
     return [
         EarlyStopping(
-            monitor=MONITOR_METRIC, patience=7, restore_best_weights=True,
+            monitor=MONITOR_METRIC, patience=10, restore_best_weights=True,
         ),
         CSVLogger(
             os.path.join(save_path, "training.log"), separator=',', append=False
         ),
         ReduceLROnPlateau(
-            monitor=MONITOR_METRIC, factor=0.1, patience=4, verbose=1, mode='min',
+            monitor=MONITOR_METRIC, factor=0.1, patience=5, verbose=1, mode='min',
         ),
         ModelCheckpoint(
             filepath=os.path.join(save_path, f"{model_name}" + ".{epoch:02d}.hdf5"),

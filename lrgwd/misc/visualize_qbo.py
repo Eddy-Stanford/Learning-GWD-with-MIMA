@@ -1,29 +1,48 @@
-from scipy.io import netcdf
+import os
+from typing import Union, List
+
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.colors as colors
+import matplotlib.cm as cm
+from scipy.io import netcdf
 
 from lrgwd.utils.io import from_pickle
-import pandas as pd
 
-def true_qbo():
-    with netcdf.netcdf_file("../../../netcdf_data/atmos_1day_d11160_plevel.nc") as year_one_qbo, netcdf.netcdf_file(
-        "../../../netcdf_data/atmos_1day_d11520_plevel.nc") as year_two_qbo ,netcdf.netcdf_file(
-        "../../../netcdf_data/atmos_1day_d12240_plevel.nc") as year_three_qbo ,netcdf.netcdf_file(
-        "../../../netcdf_data/atmos_1day_d11880_plevel.nc") as year_four_qbo:
+LAST_PLEVEL = 26 #18
+LOWEST_PLEVEL = 0
+FEAT = "gwfu_cgwd"
 
-        ucomp_data = [year_one_qbo.variables["gwfu_cgwd"][:,:18,:,:], year_two_qbo.variables["gwfu_cgwd"][:,:18,:,:] ,year_three_qbo.variables["gwfu_cgwd"][:, :18, :,:], year_four_qbo.variables["gwfu_cgwd"][:,:18,:,:]]
+def true_qbo(
+    filepath: Union[os.PathLike, str] = "/data/cees/zespinos/netcdf_data/MiMA-topo-v1.1-40-level",
+) -> None:
+    with netcdf.netcdf_file(
+        os.path.join(filepath, "atmos_1day_d11160_plevel.nc")) as year_one_qbo, netcdf.netcdf_file(
+        os.path.join(filepath, "atmos_1day_d11520_plevel.nc")) as year_two_qbo, netcdf.netcdf_file(
+        os.path.join(filepath, "atmos_1day_d11880_plevel.nc")) as year_three_qbo, netcdf.netcdf_file(
+        os.path.join(filepath, "atmos_1day_d12240_plevel.nc")) as year_four_qbo, netcdf.netcdf_file(
+        os.path.join(filepath, "atmos_1day_d12600_plevel.nc")) as year_five_qbo:
 
-        plevels = year_one_qbo.variables["level"][:]
-        months = [60*i for i in range(24*len(ucomp_data)+1)]
-        xticks= list(range(0, 24*len(ucomp_data), 2))
-        xticks_labels = list(range(0, 12*len(ucomp_data)))
-        ucomp_data = np.concatenate(ucomp_data, axis=0)
+        feat_data = [
+            year_one_qbo.variables[FEAT][:,LOWEST_PLEVEL:LAST_PLEVEL,:,:],
+            year_two_qbo.variables[FEAT][:,LOWEST_PLEVEL:LAST_PLEVEL,:,:],
+            year_three_qbo.variables[FEAT][:,LOWEST_PLEVEL:LAST_PLEVEL, :,:],
+            year_four_qbo.variables[FEAT][:,LOWEST_PLEVEL:LAST_PLEVEL,:,:],
+            year_five_qbo.variables[FEAT][:,LOWEST_PLEVEL:LAST_PLEVEL,:,:]
+        ]
 
-        ucomp_monthly_avgs = generate_monthly_averages(ucomp_data, months)
+        plevels = year_one_qbo.variables["level"][LOWEST_PLEVEL:LAST_PLEVEL]
 
-        return ucomp_monthly_avgs, plevels, xticks, xticks_labels
+        months = [60*i for i in range(24*len(feat_data)+1)]
+        xticks= list(range(0, 24*len(feat_data), 8))
+        xticks_labels = list(range(0, 12*len(feat_data), 4))
+        feat_data = np.concatenate(feat_data, axis=0)
+
+        feat_monthly_avgs = generate_monthly_averages(feat_data, months)
+
+        return feat_monthly_avgs, plevels, xticks, xticks_labels
 
 def generate_monthly_averages(data, months):
         data_avgs = []
@@ -33,27 +52,33 @@ def generate_monthly_averages(data, months):
                 vertical_column_avg = np.average(data[months[i]:months[i+1]-1, :, 32, j], axis=0)
                 lon_avg.append(vertical_column_avg)
             data_avgs.append(np.average(lon_avg, axis=0))
-        
+
         data_avgs = np.array(data_avgs)
 
         return data_avgs
 
 def plot_qbo(data, plevels, xticks, xticks_labels):
-    img = plt.imshow(data, cmap="BrBG")
+    fig = plt.figure()
+    vmin = -50
+    vmax = 50
+    img = plt.imshow(data, vmin=vmin, vmax=vmax, cmap="BrBG", norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
     cbar = plt.colorbar(img, shrink=.5)
     cbar.set_label("ucomp (m/s)")
     plt.xlabel("Months")
     plt.xticks(xticks, labels=xticks_labels)
     plt.ylabel("Pressure (hPa)")
-    plt.yticks(ticks=list(range(len(plevels))), labels=plevels)
+    plt.yticks(ticks=list(range(0, len(plevels), 2)), labels=plevels[::2])
 
 
     plt.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
     plt.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
     plt.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
+    plt.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
     # plt.xlim(left=1, right=xticks[len(xticks)-1])
-    plt.title("Mima UComp Trends [4 years]")
-    plt.show()
+    plt.title("QBO: 15 Day Mean Zonal Wind (MiMA)")
+    fig.set_size_inches(32,18)
+
+    plt.savefig("ucomp_qbo_five_years.png")
 
 # set the colormap and centre the colorbar
 class MidpointNormalize(colors.Normalize):
@@ -73,155 +98,139 @@ class MidpointNormalize(colors.Normalize):
 		return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
-def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels):
-    fig, axes = plt.subplots(nrows=2, sharex=True)
+def create_linear_segmented_colorbar(n=20, cmap="BrBG"):
+    plt.cm["BrBG"]
+    cmaplist = []
 
-    vmax = 7e-5 #np.max([np.max(truth), np.max(predictions)]) 
-    vmin = -7e-5 #np.min([np.min(truth), np.min(predictions)]) 
+def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels):
+    fig, axes = plt.subplots(nrows=2)
+
+    vmax = 7e-5 #np.max([np.max(truth), np.max(predictions)])
+    vmin = -7e-5 #np.min([np.min(truth), np.min(predictions)])
 
     axes_flat = axes.flat
-    truth_ax = axes_flat[0] 
+    truth_ax = axes_flat[0]
     pred_ax = axes_flat[1]
 
-    img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap="BrBG", norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
-    img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap="BrBG", norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
+    cmap = cm.get_cmap("BrBG", 32)
+    #cmaprange = range(0, cmap.N, 16)
+    #cmaplist = [cmap(i) for i in cmaprange]
+    #cmap = mpl.colors.LinearSegmentedColormap.from_list('Custom cmap', cmaplist, len(list(cmaprange)))
 
-    truth_ax.set_ylabel("Pressure (hPa)")
-    pred_ax.set_ylabel("Pressure (hPa)")
-    truth_ax.set_yticks(ticks=list(range(len(plevels))))
-    pred_ax.set_yticks(ticks=list(range(len(plevels))))
-    truth_ax.set_yticklabels(plevels)
-    pred_ax.set_yticklabels(plevels)
+    img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
+    img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
+
+    labelsize=12
+    axlabelsize=14
+
+    truth_ax.set_ylabel("Pressure (hPa)", fontsize=axlabelsize)
+    pred_ax.set_ylabel("Pressure (hPa)", fontsize=axlabelsize)
+    truth_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    pred_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    truth_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    pred_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
 
     truth_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
     truth_ax.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
     truth_ax.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
+    truth_ax.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
+    pred_ax.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
+
     cbar = fig.colorbar(img2, ax=axes.ravel().tolist())
-    plt.xlabel("Months")
-    plt.xticks(ticks=xticks, labels=xticks_labels)
-    cbar.set_label("gwfu (m/s^2)")
-    truth_ax.set_title("Truth GWFU Trends")
-    pred_ax.set_title("Predictions GWFU Trends")
-    plt.show()
+    ticks = np.insert(np.linspace(-7e-5, 7e-5, 8), [4], 0)
+    cbar.set_ticks(ticks)
+
+    pred_ax.set_xlabel("Months", fontsize=axlabelsize)
+    pred_ax.set_xticks(xticks)
+    pred_ax.set_xticklabels(xticks_labels)
+
+    truth_ax.set_xlabel("Months", fontsize=axlabelsize)
+    truth_ax.set_xticks(xticks)
+    truth_ax.set_xticklabels(xticks_labels)
+
+    cbar.set_label("gwfu (m/s^2)", fontsize=axlabelsize)
+    truth_ax.set_title("Physics-Based: Zonal Gravity Wave Tendencies", fontsize="x-large")
+    pred_ax.set_title("Data-Driven: Zonal Gravity Wave Tendencies", fontsize="x-large")
 
 
-def targets_qbo(plevels):
-    # year_one_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_one/metrics.pkl")
-    year_one_targets = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_one/predictions.pkl")
-    year_one_targets = year_one_targets["targets"].T
-
-    # year_two_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/metrics.pkl")
-    year_two_targets = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/predictions.pkl")
-    year_two_targets = year_two_targets["targets"].T
-
-    # year_three_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/metrics.pkl")
-    year_three_targets = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/predictions.pkl")
-    year_three_targets = year_three_targets["targets"].T
+    truth_ax.tick_params(axis='both', labelsize=labelsize)
+    pred_ax.tick_params(axis='both', labelsize=labelsize)
 
 
-    year_one_targets = year_one_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    year_two_targets = year_two_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    year_three_targets = year_three_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
+    fig.set_size_inches(16,9)
+    plt.savefig("gwfd_qbo_five_years.png")
 
-    year_targets = [year_one_targets, year_two_targets, year_three_targets]
+def predicted_qbo(
+    plevels: List[float],
+    filepath: Union[os.PathLike, str] = "/data/cees/zespinos/runs/feature_experiments/40_levels",
+):
 
-    months = [60*i for i in range(24*len(year_targets)+1)]
-    xticks= list(range(12*len(year_targets)))
+    years = ["year_two", "year_one", "year_three", "year_four", "year_five"]
+    year_predictions = []
+    for year in years:
+        year_metrics = from_pickle(os.path.join(filepath, f"{year}/evaluate/gwfu/full_features/metrics.pkl"))
+        year_data = from_pickle(os.path.join(filepath, f"{year}/evaluate/gwfu/full_features/predictions.pkl"))
+        year_data = year_data["predictions"].T
+        year_data = year_data.reshape(33, 1440, 64, 128).swapaxes(1, 0)
+        year_predictions.append(year_data[:,LOWEST_PLEVEL:LAST_PLEVEL, :,:])
+        print(f"{year}: ", year_metrics["r_squared"])
 
-    year_targets = np.concatenate(year_targets, axis=0)
-    year_one_targets, year_two_targets, year_three_targets = None, None, None
+    year_data = None
+    months = [60*i for i in range(24*len(year_predictions)+1)]
 
+    year_predictions = np.concatenate(year_predictions, axis=0)
 
-    year_targets = generate_monthly_averages(year_targets, months)
-    # plot_qbo(year_predictions, months, xticks)
-    # plot_qbo(year_targets, months, xticks)
-    
-    # year_total = np.concatenate([year_targets.T, year_predictions.T], axis=0)
-    # months = [60*i for i in range(24*4+1)]
-    # xticks= list(range(0, 36*2, 2))
-    # xticks_labels = list(range(0, 36))
+    year_predictions = generate_monthly_averages(year_predictions, months)
 
-    return year_targets
-    # plot_truth_vs_predictions(year_targets.T, year_predictions.T, plevels, xticks, xticks_labels)
+    return year_predictions
 
-    # return year_total, months, xticks
-
-def predicted_qbo(plevels):
-    # year_one_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_one/metrics.pkl")
-    year_one_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_one/predictions.pkl")
-    year_one_predictions = year_one_data["predictions"].T
-    # year_one_targets = year_one_data["targets"].T
-    year_one_data = None
-
-    # year_two_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/metrics.pkl")
+    """
+    year_two_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/metrics.pkl")
+    year_one_metrics = from_pickle(os.path.join(filepath, "year_one/evaluate_gwfu/full_features/predictions.pkl")
+    year_one_data = from_pickle(os.path.join(filepath, "year_one/evaluate/gwfu/full_features/predictions.pkl"))
     year_two_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/predictions.pkl")
     year_two_predictions = year_two_data["predictions"].T
-    # year_two_targets = year_two_data["targets"].T
     year_two_data = None
 
-    # year_three_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/metrics.pkl")
+    year_three_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/metrics.pkl")
     year_three_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/predictions.pkl")
     year_three_predictions = year_three_data["predictions"].T
-    # year_three_targets = year_three_data["targets"].T
     year_three_data = None
 
     year_four_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_four/metrics.pkl")
     year_four_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_four/predictions.pkl")
     year_four_predictions = year_four_data["predictions"].T
-    # year_three_targets = year_three_data["targets"].T
     year_four_data = None
 
-    # print("Year_one: ", year_one_metrics["r_squared"])
-    # print("Year_two: ", year_two_metrics["r_squared"])
-    # print("Year_three: ", year_three_metrics["r_squared"])
-    print("Year_four: ", year_four_metrics["r_squared"])
+    year_one_predictions = year_one_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
+    year_two_predictions = year_two_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
+    year_three_predictions = year_three_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
+    year_four_predictions = year_four_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
+    year_five_predictions = year_five_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
 
-    year_one_predictions = year_one_predictions.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    year_two_predictions = year_two_predictions.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    year_three_predictions = year_three_predictions.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    year_four_predictions = year_four_predictions.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    # year_one_targets = year_one_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    # year_two_targets = year_two_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
-    # year_three_targets = year_three_targets.reshape(18, 1440, 64, 128).swapaxes(1, 0)
+    year_predictions = [
+        year_one_predictions,
+        year_two_predictions,
+        year_three_predictions,
+        year_four_predictions,
+        year_five_predictions
+    ]
+    """
 
-    year_predictions = [year_one_predictions, year_two_predictions, year_three_predictions, year_four_predictions] 
-    # year_targets = [year_one_targets, year_two_targets, year_three_targets]
-
-    months = [60*i for i in range(24*len(year_predictions)+1)]
-    xticks_labels = list(range(12*len(year_predictions)))
-    xticks= list(range(0, 12*len(year_predictions)*2, 2))
-
-    year_predictions = np.concatenate(year_predictions, axis=0)
-    year_one_predictions, year_two_predictions, year_three_predictions, year_four_predictions = None, None, None, None
-    # year_targets = np.concatenate(year_targets, axis=0)
-
-
-    year_predictions = generate_monthly_averages(year_predictions, months)
-    # year_targets = generate_monthly_averages(year_targets, months)
-    # plot_qbo(year_predictions, months, xticks)
-    # plot_qbo(year_targets, months, xticks)
-    
-    # year_total = np.concatenate([year_targets.T, year_predictions.T], axis=0)
-    # months = [60*i for i in range(24*4+1)]
-
-    return year_predictions, xticks, xticks_labels
-    # plot_truth_vs_predictions(year_targets.T, year_predictions.T, plevels, xticks, xticks_labels)
-
-    # return year_total, months, xticks
 
 
 def main():
         # Plot True QBO
         year_targets, plevels, xticks, xlabels = true_qbo()
-        # plot_qbo(ucomp_data, plevels, xticks, xlabels)
+        #plot_qbo(year_targets.T, plevels, xticks, xlabels)
 
-        # Generate Predicted QBO 
+        # Generate Predicted QBO
         # year_targets = targets_qbo(plevels)
-        year_predictions, xticks, xticks_labels = predicted_qbo(plevels)
-        plot_truth_vs_predictions(year_targets.T, year_predictions.T, plevels, xticks, xticks_labels)
+        year_predictions = predicted_qbo(plevels)
+        plot_truth_vs_predictions(year_targets.T, year_predictions.T, plevels, xticks, xlabels)
 
 
         # Plot Predicted QBO

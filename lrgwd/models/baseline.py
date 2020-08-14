@@ -13,7 +13,7 @@ tf.autograph.set_verbosity(3, True)
 def compile_model(model, learning_rate):
     # Optimizer
     adam_optimizer = tf.keras.optimizers.Adam(
-        learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False
+        learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False, clipvalue=.1,
     )
     model.compile(
         # eagerly=True,
