@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 class Splitter():
-    def __init__(self, save_path: Union[os.PathLike, str], skip_labels=True):
+    def __init__(self, save_path: Union[os.PathLike, str], skip_labels=False):
         # Save Paths
         self.train_tensors_path = os.path.join(save_path, TRAIN_TENSORS_FN)
         self.train_labels_path = os.path.join(save_path, TRAIN_LABELS_FN)
@@ -105,8 +105,8 @@ def split(
 ):
     # Source Paths
     tensors_path = os.path.join(source_path, TENSORS_FN)
-    gwfu_path = os.path.join(source_path, "../full_features", GWFU_FN)
-    gwfv_path = os.path.join(source_path, "../full_features", GWFV_FN)
+    gwfu_path = os.path.join(source_path, GWFU_FN)
+    gwfv_path = os.path.join(source_path, GWFV_FN)
     labels_path = os.path.join(source_path, LABELS_FN)
 
     splitter = Splitter(save_path, skip_labels)

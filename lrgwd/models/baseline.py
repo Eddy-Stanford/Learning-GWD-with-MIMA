@@ -10,6 +10,32 @@ from tensorflow.keras.layers import Dense, BatchNormalization
 tf.autograph.set_verbosity(3, True)
 # tf.compat.v1.enable_eager_execution()
 
+def compile_model(model, learning_rate):
+    # Optimizer
+    adam_optimizer = tf.keras.optimizers.Adam(
+        learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False, clipvalue=.1,
+    )
+    model.compile(
+        # eagerly=True,
+        # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
+        # RMSProp (reduces variation in steps)
+        optimizer=adam_optimizer,
+        loss=tf.keras.losses.LogCosh(reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="log_cosh"),
+        metrics=[
+            # Fits to Median: robust to unwanted outliers
+            tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
+            # # Fits to Mean: robust to wanted outliers
+            tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
+            # # Twice diferentiable, combination of MSE and MAE
+            tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
+            # # STD of residuals
+            tf.keras.metrics.RootMeanSquaredError(
+                name="root_mean_squared_error", dtype=None
+            )
+        ]
+    )
+    return model
+
 class BaseLine():
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
@@ -40,9 +66,8 @@ class BaseLine():
 
         # Optimizer
         adam_optimizer = tf.keras.optimizers.Adam(
-            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False, clipvalue=.1,
+            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False
         )
-
         # Compile
         self.model.compile(
             # eagerly=True,

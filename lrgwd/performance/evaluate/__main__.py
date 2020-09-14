@@ -86,6 +86,12 @@ python lrgwd evaluate \
     show_default=True,
     help="Track run using mlflow"
 )
+@click.option(
+    "--evaluate-with-random/--no-evaluate-with-random",
+    default=False,
+    show_default=True,
+    help="Evaluate using randomly generated tensors (loc=0.0, scale=1.0)"
+)
 @click.option("--verbose/--no-verbose", default=True)
 @click.option("--visualize/--no-visualize", default=True)
 def main(**params):
@@ -102,7 +108,8 @@ def main(**params):
 
         # Load Model
         if params["verbose"]: logger.info("Loading Model")
-        model = keras.models.load_model(os.path.join(params["model_path"]))
+        model = keras.models.load_model(os.path.join(params["model_path"]), compile=False)
+        model.compile(loss="logcosh", optimizer="adam")
         model.summary()
 
         # Load Test Data
@@ -115,6 +122,7 @@ def main(**params):
             remove_outliers=params["remove_outliers"],
             save_path=params["save_path"],
             model=model,
+            evaluate_with_random=params["evaluate_with_random"],
         )
 
         # Visualize and Metrics

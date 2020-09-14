@@ -31,9 +31,9 @@ def plot_scatter(
     fig = sns.jointplot(x=X, y=y)
     fig.set_axis_labels(f"{X_name} ({X_units})", f"{y_name} ({y_units})")
     fig.savefig(os.path.join(save_path, f"{X_name}_vs_{y_name}_scatter.png"))
-        
 
-    
+
+
 def plot_distribution(
     feat_info: Dict[str, Any],
     feat_data: np.ndarray,
@@ -49,7 +49,8 @@ def plot_distribution(
 
     # Cut the window in 2 parts
     f, (ax_box, ax_hist) = plt.subplots(2, sharex=True, gridspec_kw={"height_ratios": (.15, .85)})
- 
+    plt.yscale('log')
+
     # Add a graph in each part
     sns.boxplot(flat_data, ax=ax_box)
     N, bins, patches = ax_hist.hist(flat_data, bins=100, density=True)
@@ -63,19 +64,19 @@ def plot_distribution(
     for thisfrac, thispatch in zip(fracs, patches):
         color = plt.cm.viridis(norm(thisfrac))
         thispatch.set_facecolor(color)
- 
+
     # Remove x axis name for the boxplot
     ax_box.set(xlabel='')
     ax_box.set_title(f"{feat_name}: mu={mu}")
     ax_hist.set(xlabel=f"{feat_unit}", ylabel='%')
 
     f.savefig(os.path.join(save_path, f"{feat_name}_dist.png"))
- 
+
 
 def plot_distribution_per_level(
     feat_info: Dict[str, Any],
     feat_data: np.ndarray,
-    plevels: np.ndarray, 
+    plevels: np.ndarray,
     save_path: Union[os.PathLike, str],
 ) -> None:
     long_name = feat_info["long_name"]
@@ -104,7 +105,7 @@ def plot_distribution_per_level(
 
 
 def create_histogram(
-    raw_data_attribute: np.ndarray, 
+    raw_data_attribute: np.ndarray,
     axs, #AxsSubPlot
     dims: int,
     title: str,
