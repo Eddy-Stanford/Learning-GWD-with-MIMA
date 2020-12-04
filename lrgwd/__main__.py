@@ -5,6 +5,7 @@ from lrgwd.extractor.__main__ import main as extractor
 from lrgwd.ingestor.__main__ import main as ingestor
 from lrgwd.performance.compare.__main__ import main as compare
 from lrgwd.performance.evaluate.__main__ import main as evaluate
+from lrgwd.performance.shap.__main__ import main as shap
 from lrgwd.split.__main__ import main as split
 from lrgwd.train.__main__ import main as train
 
@@ -18,6 +19,7 @@ main.add_command(extractor)
 main.add_command(split)
 main.add_command(train)
 main.add_command(evaluate)
+main.add_command(shap)
 main.add_command(compare)
 
 
