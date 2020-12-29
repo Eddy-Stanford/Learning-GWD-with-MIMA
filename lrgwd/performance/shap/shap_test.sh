@@ -10,12 +10,12 @@
 CODE_DIR=/scratch/zespinos/Learning-GWD-with-MIMA
 DATA_DIR=/data/cees/zespinos/runs/feature_experiments/40_levels
 
-MODEL_ONE=baseline.120.hdf5
+MODEL_ONE=baseline.120.hdf5 #baseline.120.hdf5 = u, baseline.152.hdf5 = v
 
 EXPERIMENT=full_features_cont #only_u
 TRAIN_YEAR=year_one
 TEST_YEAR=year_four
-TARGET=gwfv
+TARGET=gwfu
 
 cd $CODE_DIR
 

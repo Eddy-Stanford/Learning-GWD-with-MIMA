@@ -11,8 +11,9 @@ from scipy.io import netcdf
 
 from lrgwd.utils.io import from_pickle
 
-LAST_PLEVEL = 26 #18
-LOWEST_PLEVEL = 0
+LAST_PLEVEL = 33 #26 18
+LOWEST_PLEVEL = 2
+FEAT = "ucomp"
 FEAT = "gwfu_cgwd"
 
 def true_qbo(
@@ -48,7 +49,7 @@ def true_qbo(
         return feat_monthly_avgs, plevels, xticks, xticks_labels
 
 def generate_monthly_averages(data, two_weeks):
-        latitude = 11 # 32 = (equator) or 53 (polar vortex 60N) or 11 (south 60S)
+        latitude = 32 # 32 = (equator) or 53 (polar vortex 60N) or 11 (south 60S)
         data_avgs = []
         for i in range(len(two_weeks)-1):
             lon_avg = []
@@ -109,26 +110,62 @@ def create_linear_segmented_colorbar(n=20, cmap="BrBG"):
 def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels):
     fig, axes = plt.subplots(nrows=3)
 
-    vmax = 1e-3 #np.max([np.max(truth), np.max(predictions)])
-    vmin = -1e-3 #np.min([np.min(truth), np.min(predictions)])
+    vmax = 1e-4
+    print("max: ", np.max([np.max(truth), np.max(predictions)]))
+    vmin = -1e-4
+    print("min: ", np.min([np.min(truth), np.min(predictions)]))
 
     axes_flat = axes.flat
     truth_ax = axes_flat[0]
     diff_ax = axes_flat[1]
     pred_ax = axes_flat[2]
 
-    cmap = cm.get_cmap("BrBG", 64)
+    colormap = 'RdYlBu'
+    #cmap = cm.get_cmap("BrBG", 128)
+    #cmap = cm.get_cmap("terrain")
+    cmap = cm.get_cmap(colormap)
     #cmaprange = range(0, cmap.N, 16)
     #cmaplist = [cmap(i) for i in cmaprange]
     #cmap = mpl.colors.LinearSegmentedColormap.from_list('Custom cmap', cmaplist, len(list(cmaprange)))
 
-    linthresh = 1e-7
+    linthresh = 1e-7 #5e-8
     linscale = 1.0
     base = 10
 
+    print("plevels: ", plevels)
+    Y = plevels
+    X = np.arange(120)
+    X,Y = np.meshgrid(X,Y)
+
+    img1 = truth_ax.pcolor(X,Y,truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img2 = pred_ax.pcolor(X,Y,predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img3 = diff_ax.pcolor(X,Y,truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+
+    #img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    #img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    #img3 = diff_ax.imshow(truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+
+    truth_ax.set_yscale('log')
+    diff_ax.set_yscale('log')
+    pred_ax.set_yscale('log')
+
+    diff_ax.set_ylim(np.max(plevels), np.min(plevels))
+    pred_ax.set_ylim(np.max(plevels), np.min(plevels))
+    truth_ax.set_ylim(np.max(plevels), np.min(plevels))
+
+    truth_ax.set_yticks([1, 10, 100])
+    diff_ax.set_yticks([1, 10, 100])
+    pred_ax.set_yticks([1, 10, 100])
+
+    truth_ax.set_yticklabels([1, 10, 100])
+    diff_ax.set_yticklabels([1, 10, 100])
+    pred_ax.set_yticklabels([1, 10, 100])
+
+    """
     img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
     img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
     img3 = diff_ax.imshow(truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    """
     #norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
 
     labelsize=14
@@ -139,13 +176,13 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
     diff_ax.set_ylabel("Pressure [hPa]", fontsize=axlabelsize)
 
     # Set y axes ticks
-    truth_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
-    pred_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
-    diff_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    #truth_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    #pred_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    #diff_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
     # Set y axes labels
-    truth_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
-    pred_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
-    diff_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    #truth_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    #pred_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    #diff_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
 
     # Set vertical dashed lines - delineate year
     truth_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
@@ -183,9 +220,10 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
     #ticks = np.insert(np.linspace(-7e-5, 7e-5, 8), [4], 0)
     #cbar.set_ticks(ticks)
     cbar.set_label(r"[m$s^{-2}$]", fontsize=18)
+    cbar.ax.tick_params(labelsize=14)
 
     # Set title
-    truth_ax.set_title("Zonal Gravity Wave Drag Tendencies (60N)", fontsize="x-large")
+    truth_ax.set_title("Zonal Equatorial Gravity Wave Drag Tendencies", fontsize="x-large")
 
     truth_ax.tick_params(axis='y', labelsize=labelsize)
     diff_ax.tick_params(axis='y', labelsize=labelsize)
@@ -193,13 +231,14 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
 
     # Add Labels text
     textsize = 16
-    truth_ax.text(.01, .9, "a) MiMA", transform=truth_ax.transAxes, fontsize=textsize)
+    truth_ax.text(.01, .9, "a) AD99", transform=truth_ax.transAxes, fontsize=textsize)
     diff_ax.text(.01, .9, "b) Difference", transform=diff_ax.transAxes, fontsize=textsize)
     pred_ax.text(.01, .9, "c) ANN", transform=pred_ax.transAxes, fontsize=textsize)
 
 
     fig.set_size_inches(16,9)
-    plt.savefig("gwfd_south_five_years.pdf")
+    plt.savefig(f"qbo_five_years_{colormap}_exp.png")
+    plt.savefig(f"qbo_five_years_{colormap}_exp.pdf")
 
 def predicted_qbo(
     plevels: List[float],

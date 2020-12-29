@@ -139,6 +139,7 @@ def main(**params):
                    4.36e+02, 5.03e+02, 5.77e+02, 6.55e+02,
                    7.37e+02, 8.21e+02, 9.02e+02, 9.71e+02]
 
+        if params["verbose"]: logger.info("Calculate R Squared")
         r_squared = calculate_rsquared(
             Y_pred=evaluation_package.Y_pred,
             Y=evaluation_package.Y_raw,
@@ -156,30 +157,32 @@ def main(**params):
         return
 
         ##### CREATE FEATURE NAMES VECTOR #####
-        features = ["T", "H", "u", "v", "w"]
-        features = ["u"]
+        #features = ["T", "H", "u", "v", "w"]
+        features = ["u", "v"]
         feature_names = []
+        plevels = [int(p) for p in plevels]
         for feat in features:
-            for i in plevels:
-                feature_names.append(feat + f"_{i}")
+            for i, level in enumerate(plevels):
+                dif = 13 - i
+                feature_names.append(feat + f" {dif}")
         #feature_names.extend(["slp", "lat", "lon"])
         ########################################
 
-        background = 2000
-        num_test = 250
+        background = 4500
+        num_test = 5000
 
         X = evaluation_package.X
 
         for pidx, plevel in enumerate(plevels):
-            if pidx >= 33: return
+            #if pidx >= 33: return
+            #if pidx >= 27 or pidx <= 10: continue
+            if pidx != 13: continue # or pidx != 13: continue
 
             pmodel = keras.Model(model.input, model.output[pidx])
             pmodel.compile(loss="logcosh", optimizer="adam")
             pmodel.summary()
 
             Y = evaluation_package.Y[:, pidx]
-            import pdb
-            pdb.set_trace()
 
             print("PLevel: ", pidx, " Pressure: ", plevel)
             print("X shape: ", evaluation_package.X.shape)
@@ -195,10 +198,18 @@ def main(**params):
             print("Generated shap values")
             print(shap_values)
 
-            fig = shap.summary_plot(shap_values[0][:,80:120], X_s[:,80:120], max_display=40, feature_names=feature_names, plot_type='dot', sort=False, show=False)
+            #u_shap = shap_values[0][:,80:120]
+            v_shap = shap_values[0][:,80:160]
+            #u_X_s = X_s[:,80:120]
+            v_X_s = X_s[:,80:160]
+
+            fig = shap.summary_plot(v_shap, v_X_s, max_display=7, feature_names=feature_names, plot_type='bar') #sort=False, show=False)
             print("Created figure")
-            plt.tight_layout()
-            plt.title(f"{pidx} Summary Chart ({plevel} hPa)")
-            plt.savefig(f'lrgwd/performance/shap/shap_zonal_wind_summary_{pidx}.png')
+            ax = plt.gca()
+            plt.text(.9, .1, "d)", fontsize=24, transform=ax.transAxes)
+            plt.xlabel('mean(|SHAP value|)')
+            plt.title(f"Top Wind Predictors of Zonal GWD at 10hPa")
+            plt.savefig(f'lrgwd/performance/shap/bar_zonal_predictions_wind_summary_{pidx}.png')
+            plt.savefig(f'lrgwd/performance/shap/bar_zonal_predictions_wind_summary_{pidx}.pdf')
             plt.clf()
 

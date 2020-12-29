@@ -181,6 +181,7 @@ def plot_predictions_vs_truth(
     plt.subplots_adjust(wspace=.20, hspace=.30)
 
     labelsize=32
+    panels = ["a", "b", "c", "d"]
 
     for pane, pkg in enumerate(zip(pidxs, plevels_labels)):
         pidx, plevel = pkg
@@ -213,6 +214,11 @@ def plot_predictions_vs_truth(
         xoffset.set_size(labelsize)
 
         cur_r_squared = np.round(r_squared[pidx], 3)
+        ax.text(.85,.05,
+            f"{panels[pane]})",
+            transform=ax.transAxes,
+            fontsize=48,
+        )
         ax.text(
             0.1, 0.85,
             f"$R^2$: {cur_r_squared}",
@@ -229,7 +235,7 @@ def plot_predictions_vs_truth(
     }
 
     ax1.text(
-        -.25, -0.3, "MiMA [$ms^{-2}$]", fontdict=fontdict, transform=ax.transAxes
+        -.25, -0.3, "AD99 [$ms^{-2}$]", fontdict=fontdict, transform=ax.transAxes
     )
     ax2 = axs[0,0]
     ax2.text(
@@ -245,6 +251,12 @@ def plot_predictions_vs_truth(
     axrsq.set_yscale('log')
     axrsq.yaxis.set_label_position("right")
     axrsq.yaxis.tick_right()
+    axrsq.text(
+        .05, .03,
+        "e)",
+        transform=axrsq.transAxes,
+        fontsize=48,
+    )
 
     #axrsq.get_yaxis().set_major_formatter(mpl.ticker.ScalarFormatter())
     #axrsq.set_yticks([1.0, 5.0, 10.0, 50.0, 100.0, 500.0])
@@ -252,6 +264,8 @@ def plot_predictions_vs_truth(
     pmax = max(plevels) + max(plevels)*.30
     pmin = min(plevels) - min(plevels)*.30
     axrsq.set_ylim(pmax, pmin)
+    axrsq.set_yticks([.1,.5,1,5,10,50,100,200, 500])
+    axrsq.set_yticklabels([".1", ".5", "1", "5", "10", "50", "100", "200", "500"])
     axrsq.set_xlim(.5, 1.0)
     axrsq.grid(True, linewidth=2)
 
@@ -259,8 +273,8 @@ def plot_predictions_vs_truth(
     # Make figures full screen
     fig = plt.gcf()
     fig.set_size_inches(32, 18)
-    fig.savefig(os.path.join(save_path, "lrgwd/performance/shap", f"meridional_predictions_vs_truth.pdf"))
-    fig.savefig(os.path.join(save_path, "lrgwd/performance/shap", f"meridiona$l_predictions_vs_truth.png"))
+    fig.savefig(os.path.join(save_path, "lrgwd/performance/shap", f"zonal_predictions_vs_truth_AD99.pdf"))
+    fig.savefig(os.path.join(save_path, "lrgwd/performance/shap", f"zonal_predictions_vs_truth_AD99.png"))
     plt.close(fig)
 
 """
