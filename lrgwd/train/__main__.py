@@ -125,9 +125,12 @@ def main(**params):
 
         # Get Model
         if params["model_path"] is None:
+            logger.info("Training new model")
             Model = get_model(params["model"])
             model = Model.build((metadata["input_shape"],), metadata["output_shape"], params["learning_rate"])
         else:
+            model_path = params["model_path"]
+            logger.info(f"Training model from {model_path}")
             model = load_model(params["model_path"], params["learning_rate"])
             model.summary()
 

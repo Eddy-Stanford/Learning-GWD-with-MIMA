@@ -11,8 +11,9 @@ from scipy.io import netcdf
 
 from lrgwd.utils.io import from_pickle
 
-LAST_PLEVEL = 26 #18
-LOWEST_PLEVEL = 0
+LAST_PLEVEL = 33 #26 18
+LOWEST_PLEVEL = 2
+FEAT = "ucomp"
 FEAT = "gwfu_cgwd"
 
 def true_qbo(
@@ -35,21 +36,25 @@ def true_qbo(
 
         plevels = year_one_qbo.variables["level"][LOWEST_PLEVEL:LAST_PLEVEL]
 
-        months = [60*i for i in range(24*len(feat_data)+1)]
+        # Two weeks - 60 6 hour increments = 15 days
+        two_week_windows = [60*i for i in range(24*len(feat_data)+1)]
+        # xticks: every 4 months or 8 two week increments
         xticks= list(range(0, 24*len(feat_data), 8))
+        # xtick_labels: every 4 months x add label
         xticks_labels = list(range(0, 12*len(feat_data), 4))
         feat_data = np.concatenate(feat_data, axis=0)
 
-        feat_monthly_avgs = generate_monthly_averages(feat_data, months)
+        feat_monthly_avgs = generate_monthly_averages(feat_data, two_week_windows)
 
         return feat_monthly_avgs, plevels, xticks, xticks_labels
 
-def generate_monthly_averages(data, months):
+def generate_monthly_averages(data, two_weeks):
+        latitude = 32 # 32 = (equator) or 53 (polar vortex 60N) or 11 (south 60S)
         data_avgs = []
-        for i in range(len(months)-1):
+        for i in range(len(two_weeks)-1):
             lon_avg = []
             for j in range(128):
-                vertical_column_avg = np.average(data[months[i]:months[i+1]-1, :, 32, j], axis=0)
+                vertical_column_avg = np.average(data[two_weeks[i]:two_weeks[i+1]-1, :, latitude, j], axis=0)
                 lon_avg.append(vertical_column_avg)
             data_avgs.append(np.average(lon_avg, axis=0))
 
@@ -103,65 +108,137 @@ def create_linear_segmented_colorbar(n=20, cmap="BrBG"):
     cmaplist = []
 
 def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels):
-    fig, axes = plt.subplots(nrows=2)
+    fig, axes = plt.subplots(nrows=3)
 
-    vmax = 7e-5 #np.max([np.max(truth), np.max(predictions)])
-    vmin = -7e-5 #np.min([np.min(truth), np.min(predictions)])
+    vmax = 1e-4
+    print("max: ", np.max([np.max(truth), np.max(predictions)]))
+    vmin = -1e-4
+    print("min: ", np.min([np.min(truth), np.min(predictions)]))
 
     axes_flat = axes.flat
     truth_ax = axes_flat[0]
-    pred_ax = axes_flat[1]
+    diff_ax = axes_flat[1]
+    pred_ax = axes_flat[2]
 
-    cmap = cm.get_cmap("BrBG", 32)
+    colormap = 'RdYlBu'
+    #cmap = cm.get_cmap("BrBG", 128)
+    #cmap = cm.get_cmap("terrain")
+    cmap = cm.get_cmap(colormap)
     #cmaprange = range(0, cmap.N, 16)
     #cmaplist = [cmap(i) for i in cmaprange]
     #cmap = mpl.colors.LinearSegmentedColormap.from_list('Custom cmap', cmaplist, len(list(cmaprange)))
 
-    img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
-    img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
+    linthresh = 1e-7 #5e-8
+    linscale = 1.0
+    base = 10
 
-    labelsize=12
-    axlabelsize=14
+    print("plevels: ", plevels)
+    Y = plevels
+    X = np.arange(120)
+    X,Y = np.meshgrid(X,Y)
 
-    truth_ax.set_ylabel("Pressure (hPa)", fontsize=axlabelsize)
-    pred_ax.set_ylabel("Pressure (hPa)", fontsize=axlabelsize)
-    truth_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
-    pred_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
-    truth_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
-    pred_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    img1 = truth_ax.pcolor(X,Y,truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img2 = pred_ax.pcolor(X,Y,predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img3 = diff_ax.pcolor(X,Y,truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
 
+    #img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    #img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    #img3 = diff_ax.imshow(truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+
+    truth_ax.set_yscale('log')
+    diff_ax.set_yscale('log')
+    pred_ax.set_yscale('log')
+
+    diff_ax.set_ylim(np.max(plevels), np.min(plevels))
+    pred_ax.set_ylim(np.max(plevels), np.min(plevels))
+    truth_ax.set_ylim(np.max(plevels), np.min(plevels))
+
+    truth_ax.set_yticks([1, 10, 100])
+    diff_ax.set_yticks([1, 10, 100])
+    pred_ax.set_yticks([1, 10, 100])
+
+    truth_ax.set_yticklabels([1, 10, 100])
+    diff_ax.set_yticklabels([1, 10, 100])
+    pred_ax.set_yticklabels([1, 10, 100])
+
+    """
+    img1 = truth_ax.imshow(truth, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img2 = pred_ax.imshow(predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    img3 = diff_ax.imshow(truth-predictions, vmin=vmin, vmax=vmax, cmap=cmap, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=base, vmin=vmin, vmax=vmax))
+    """
+    #norm=MidpointNormalize(midpoint=0,vmin=vmin, vmax=vmax))
+
+    labelsize=14
+    axlabelsize=16
+
+    truth_ax.set_ylabel("Pressure [hPa]", fontsize=axlabelsize)
+    pred_ax.set_ylabel("Pressure [hPa]", fontsize=axlabelsize)
+    diff_ax.set_ylabel("Pressure [hPa]", fontsize=axlabelsize)
+
+    # Set y axes ticks
+    #truth_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    #pred_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    #diff_ax.set_yticks(ticks=[0,12,24]) #list(range(0, len(plevels), 4)))
+    # Set y axes labels
+    #truth_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    #pred_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+    #diff_ax.set_yticklabels([1.0, 10.0, 100.0]) #plevels[::4])
+
+    # Set vertical dashed lines - delineate year
     truth_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
     truth_ax.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
     truth_ax.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
     truth_ax.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
+
     pred_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
     pred_ax.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
 
-    cbar = fig.colorbar(img2, ax=axes.ravel().tolist())
-    ticks = np.insert(np.linspace(-7e-5, 7e-5, 8), [4], 0)
-    cbar.set_ticks(ticks)
+    diff_ax.axvline(x=24, color='black', alpha=.5, linestyle="dashed")
+    diff_ax.axvline(x=48, color='black', alpha=.5, linestyle="dashed")
+    diff_ax.axvline(x=72, color='black', alpha=.5, linestyle="dashed")
+    diff_ax.axvline(x=96, color='black', alpha=.5, linestyle="dashed")
 
-    pred_ax.set_xlabel("Months", fontsize=axlabelsize)
+
+    # Set only x ticks on truth and diff
+    diff_ax.set_xticks(xticks)
+    truth_ax.set_xticks(xticks)
+    diff_ax.get_xaxis().set_ticklabels([])
+    truth_ax.get_xaxis().set_ticklabels([])
+    #truth_ax.set_xlabel("Months", fontsize=axlabelsize)
+    #truth_ax.set_xticklabels(xticks_labels)
+
+    # Set x ticks and labels on pred
     pred_ax.set_xticks(xticks)
+    pred_ax.set_xlabel("Months", fontsize=axlabelsize)
     pred_ax.set_xticklabels(xticks_labels)
 
-    truth_ax.set_xlabel("Months", fontsize=axlabelsize)
-    truth_ax.set_xticks(xticks)
-    truth_ax.set_xticklabels(xticks_labels)
+    # Set colobar
+    cbar = fig.colorbar(img2, ax=axes.ravel().tolist())
+    cbar.extend = 'both'
+    #ticks = np.insert(np.linspace(-7e-5, 7e-5, 8), [4], 0)
+    #cbar.set_ticks(ticks)
+    cbar.set_label(r"[m$s^{-2}$]", fontsize=18)
+    cbar.ax.tick_params(labelsize=14)
 
-    cbar.set_label("gwfu (m/s^2)", fontsize=axlabelsize)
-    truth_ax.set_title("Physics-Based: Zonal Gravity Wave Tendencies", fontsize="x-large")
-    pred_ax.set_title("Data-Driven: Zonal Gravity Wave Tendencies", fontsize="x-large")
+    # Set title
+    truth_ax.set_title("Zonal Equatorial Gravity Wave Drag Tendencies", fontsize="x-large")
 
-
-    truth_ax.tick_params(axis='both', labelsize=labelsize)
+    truth_ax.tick_params(axis='y', labelsize=labelsize)
+    diff_ax.tick_params(axis='y', labelsize=labelsize)
     pred_ax.tick_params(axis='both', labelsize=labelsize)
+
+    # Add Labels text
+    textsize = 16
+    truth_ax.text(.01, .9, "a) AD99", transform=truth_ax.transAxes, fontsize=textsize)
+    diff_ax.text(.01, .9, "b) Difference", transform=diff_ax.transAxes, fontsize=textsize)
+    pred_ax.text(.01, .9, "c) ANN", transform=pred_ax.transAxes, fontsize=textsize)
 
 
     fig.set_size_inches(16,9)
-    plt.savefig("gwfd_qbo_five_years.png")
+    plt.savefig(f"qbo_five_years_{colormap}_exp.png")
+    plt.savefig(f"qbo_five_years_{colormap}_exp.pdf")
 
 def predicted_qbo(
     plevels: List[float],
@@ -187,58 +264,23 @@ def predicted_qbo(
 
     return year_predictions
 
-    """
-    year_two_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/metrics.pkl")
-    year_one_metrics = from_pickle(os.path.join(filepath, "year_one/evaluate_gwfu/full_features/predictions.pkl")
-    year_one_data = from_pickle(os.path.join(filepath, "year_one/evaluate/gwfu/full_features/predictions.pkl"))
-    year_two_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_two/predictions.pkl")
-    year_two_predictions = year_two_data["predictions"].T
-    year_two_data = None
-
-    year_three_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/metrics.pkl")
-    year_three_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_three/predictions.pkl")
-    year_three_predictions = year_three_data["predictions"].T
-    year_three_data = None
-
-    year_four_metrics = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_four/metrics.pkl")
-    year_four_data = from_pickle("../../runs/Logcosh_DeepNet/evaluate_year_four/predictions.pkl")
-    year_four_predictions = year_four_data["predictions"].T
-    year_four_data = None
-
-    year_one_predictions = year_one_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
-    year_two_predictions = year_two_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
-    year_three_predictions = year_three_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
-    year_four_predictions = year_four_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
-    year_five_predictions = year_five_predictions.reshape(33, 1440, 64, 128).swapaxes(1, 0)
-
-    year_predictions = [
-        year_one_predictions,
-        year_two_predictions,
-        year_three_predictions,
-        year_four_predictions,
-        year_five_predictions
-    ]
-    """
-
-
 
 def main():
         # Plot True QBO
+        print("############## starting script ##############")
         year_targets, plevels, xticks, xlabels = true_qbo()
+        print("############## load true qbo ##############")
         #plot_qbo(year_targets.T, plevels, xticks, xlabels)
 
         # Generate Predicted QBO
         # year_targets = targets_qbo(plevels)
         year_predictions = predicted_qbo(plevels)
+        print("############## get predicted qbo  ##############")
         plot_truth_vs_predictions(year_targets.T, year_predictions.T, plevels, xticks, xlabels)
+        print("############## plot truth and predictions ##############")
 
 
         # Plot Predicted QBO
         # plot_qbo(year_one, plevels, xticks)
 
 main()
-
-
-    # year_one_predictions = pd.read_csv("../../runs/data/year_one/extracted_unshuffled/gwfu.csv", header=None).to_numpy().T
-    # zeros = np.zeros((1,18))
-    # year_one_predictions = np.concatenate([year_one_predictions, zeros], axis=0)
