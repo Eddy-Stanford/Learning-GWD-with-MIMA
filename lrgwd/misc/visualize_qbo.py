@@ -49,7 +49,7 @@ def true_qbo(
         return feat_monthly_avgs, plevels, xticks, xticks_labels
 
 def generate_monthly_averages(data, two_weeks):
-        latitude = 32 # 32 = (equator) or 53 (polar vortex 60N) or 11 (south 60S)
+        latitude = 53 # 32 = (equator) or 53 (polar vortex 60N) or 11 (south 60S)
         data_avgs = []
         for i in range(len(two_weeks)-1):
             lon_avg = []
@@ -120,7 +120,7 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
     diff_ax = axes_flat[1]
     pred_ax = axes_flat[2]
 
-    colormap = 'RdYlBu'
+    colormap = 'BrBG'
     #cmap = cm.get_cmap("BrBG", 128)
     #cmap = cm.get_cmap("terrain")
     cmap = cm.get_cmap(colormap)
@@ -223,7 +223,7 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
     cbar.ax.tick_params(labelsize=14)
 
     # Set title
-    truth_ax.set_title("Zonal Equatorial Gravity Wave Drag Tendencies", fontsize="x-large")
+    truth_ax.set_title("Zonal Gravity Wave Drag Tendencies (60N)", fontsize="x-large")
 
     truth_ax.tick_params(axis='y', labelsize=labelsize)
     diff_ax.tick_params(axis='y', labelsize=labelsize)
@@ -237,8 +237,8 @@ def plot_truth_vs_predictions(truth, predictions, plevels, xticks, xticks_labels
 
 
     fig.set_size_inches(16,9)
-    plt.savefig(f"qbo_five_years_{colormap}_exp.png")
-    plt.savefig(f"qbo_five_years_{colormap}_exp.pdf")
+    plt.savefig("polar_five_years_equator.png")
+    plt.savefig("polar_five_years_equator.pdf")
 
 def predicted_qbo(
     plevels: List[float],
