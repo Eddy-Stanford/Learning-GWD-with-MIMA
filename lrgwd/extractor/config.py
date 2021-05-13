@@ -8,7 +8,7 @@ DEFAULTS = {
     },
     "num_samples": None,
     "plevels_included": 40,
-    "features": ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
+    "features": ["temp", "ucomp", "vcomp", "lat", "lon"]
 }
 
 TENSORS_FN = "tensors.csv"

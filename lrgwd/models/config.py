@@ -7,7 +7,11 @@ BLOCK_PARAMS = {
     "units_in_plevel_hidden_layers": [256, 128, 64, 32],
 }
 
-VALID_MODELS = ["baseline"]
+WAVENET_PARAMS = {
+    "units": [500, 500, 256, 256, 256, 256, 128, 128]
+}
+
+VALID_MODELS = ["baseline", "wavenet_2"]
 
 LOSS_ARRAY = [
     tf.keras.losses.MeanSquaredError(), # 0

@@ -78,6 +78,7 @@ class Splitter():
         if labels != None: labels.to_csv(self.test_labels_path, mode='a', header=self.include_test_header, index=False)
         self.include_test_header = False
 
+
 def save_metadata(
     save_path: Union[os.PathLike, str],
     source_path: Union[os.PathLike, str],

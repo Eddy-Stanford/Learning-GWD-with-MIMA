@@ -26,16 +26,29 @@ MIMA = {
     }
 }
 
-FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "level", "slp", "gwfu_cgwd", "gwfv_cgwd"]
+# Old Features
+#FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "level", "slp", "gwfu_cgwd", "gwfv_cgwd"]
+
+# Total new features
+#FEATURES = ["temp", "bk", "ucomp", "vcomp", "omega", "pfull", "slp", "gwfu_cgwd", "gwfv_cgwd"]
+# New set of features
+FEATURES = ["temp", "ucomp", "vcomp", "omega", "pfull", "slp", "gwfu_cgwd", "gwfv_cgwd"]
 
 # TOP 18 pressure levels have non zero gwd values
 NON_ZERO_GWD_PLEVELS = 33
 
-TENSOR = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "gwfu_cgwd", "gwfv_cgwd"]
-VERTICAL_COLUMN_FEATURES = ["slp", "lat", "lon"]
+# LEGACY
+#TENSOR = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "gwfu_cgwd", "gwfv_cgwd"]
+#VERTICAL_COLUMN_FEATURES = ["slp", "lat", "lon"]
 
-TRAIN_FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
+#TRAIN_FEATURES = ["temp", "hght", "ucomp", "vcomp", "omega", "slp", "lat", "lon"]
+#TARGET_FEATURES = ["gwfu_cgwd", "gwfv_cgwd"]
+
+# WAVENET_2.0
+VERTICAL_COLUMN_FEATURES = ["lat", "lon"]
+TRAIN_FEATURES = ["temp", "ucomp", "vcomp", "lat", "lon"]
 TARGET_FEATURES = ["gwfu_cgwd", "gwfv_cgwd"]
+
 
 # FEATURE_INFO = {
 #     "time": {

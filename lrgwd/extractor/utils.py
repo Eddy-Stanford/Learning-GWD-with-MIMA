@@ -3,7 +3,7 @@ from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from lrgwd.config import (NON_ZERO_GWD_PLEVELS, TARGET_FEATURES, TENSOR,
+from lrgwd.config import (NON_ZERO_GWD_PLEVELS, TARGET_FEATURES,
                           TRAIN_FEATURES, VERTICAL_COLUMN_FEATURES)
 from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
 from lrgwd.utils.io import to_pickle

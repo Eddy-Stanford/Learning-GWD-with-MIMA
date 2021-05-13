@@ -167,7 +167,6 @@ def main(**params):
 
         # Fit Model
         callbacks = get_callbacks(params["save_path"], params["model"])
-        # model.run_eagerly = True
         history = model.fit(
             x=train_generator,
             validation_data=val_generator,

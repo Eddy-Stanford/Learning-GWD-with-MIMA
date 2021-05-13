@@ -17,6 +17,7 @@ from tensorflow.keras.callbacks import (EarlyStopping, ModelCheckpoint,
 
 from lrgwd.config import NON_ZERO_GWD_PLEVELS
 from lrgwd.models.baseline import BaseLine, compile_model
+from lrgwd.models.wavenet_2 import Wavenet_2
 from lrgwd.models.config import VALID_MODELS
 from lrgwd.train.config import MONITOR_METRIC
 from lrgwd.utils.io import from_pickle
@@ -28,8 +29,10 @@ from lrgwd.utils.logger import logger
 def get_model(model: str):
     if model == "baseline":
         return BaseLine()
+    elif model == "wavenet_2":
+        return Wavenet_2()
     else:
-        raise Exception("In valid model. Pick one of: f{VALID_MODELS}")
+        raise Exception(f"Invalid model. Pick one of: {VALID_MODELS}")
 
 
 def get_metadata(source_path: Union[os.PathLike, str]):
@@ -162,9 +165,4 @@ class DataGenerator(utils.Sequence):
             train_dataset = train_dataset.shuffle(buffer_size=self.chunk_size).batch(batch_size, drop_remainder=True)
             for train_batch, target_batch in train_dataset:
                 target_batch = np.hsplit(target_batch, NON_ZERO_GWD_PLEVELS)
-
-                if train_with_random:
-                    random_batch = np.random.normal(loc=0.0, scale=1.0, size=train_batch.shape)
-                    train_batch = tf.convert_to_tensor(random_batch)
-
                 yield train_batch, target_batch
