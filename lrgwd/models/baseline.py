@@ -7,7 +7,6 @@ from lrgwd.models.config import BLOCK_PARAMS, LOSS_ARRAY
 from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, BatchNormalization
 
-tf.autograph.set_verbosity(3, True)
 
 def compile_model(model, learning_rate):
     # Optimizer

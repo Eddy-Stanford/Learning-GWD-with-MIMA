@@ -26,18 +26,21 @@ class EvaluationPackage(object):
         save_path: Union[os.PathLike, str],
         model,
         evaluate_with_random: bool = False,
+        use_tflite: bool = False,
     ) -> None:
 
-        test_tensors_fp = os.path.join(source_path, "tensors.csv")
-        test_targets_fp = os.path.join(source_path,  f"{target}.csv")
-
-        # Get Scalers
+        # Get tensor scaler
+        test_tensors_fp = os.path.join(source_path, "test_tensors.csv")
         tensors_scaler_fp = os.path.join(scaler_path, "tensors_scaler.pkl")
         tensors_scaler = from_pickle(tensors_scaler_fp)
 
+
+        test_targets_fp = os.path.join(source_path,  f"test_{target}.csv")
         target_scaler_fp = os.path.join(scaler_path, f"{target}_scaler.pkl")
         target_scaler = from_pickle(target_scaler_fp)
 
+
+        self.target = target
         self.predictions = []
         self.targets = []
         chunksize = 100000
@@ -47,8 +50,8 @@ class EvaluationPackage(object):
             chunksize = num_samples
 
         for test_tensors, test_targets in tqdm(zip(
-            pd.read_csv(test_tensors_fp, header=None, chunksize=chunksize),
-            pd.read_csv(test_targets_fp, header=None, chunksize=chunksize),
+            pd.read_csv(test_tensors_fp, chunksize=chunksize),
+            pd.read_csv(test_targets_fp, chunksize=chunksize),
         ), "Load test data"):
             if num_samples is not None and num_total_predictions >= int(num_samples): break
 
@@ -66,6 +69,7 @@ class EvaluationPackage(object):
                     model=model,
                     tensors=test_tensors,
                     target_scaler=target_scaler,
+                    use_tflite=use_tflite,
                 )
             )
 
@@ -92,9 +96,29 @@ class EvaluationPackage(object):
         )
 
 
-    def predict(self, model, tensors, target_scaler):
-        predictions = model.predict(tensors)
-        predictions = np.hstack(predictions)
+    def predict(self, model, tensors, target_scaler, use_tflite):
+        # Predict for tflite model
+        if use_tflite:
+            predictions = []
+
+            input_index = model.get_input_details()[0]["index"]
+            output_index = model.get_output_details()[0]["index"]
+
+            for tensor in tensors:
+                tensor = np.reshape(tensor, (1,tensor.shape[0]))
+                model.set_tensor(input_index, tensor.astype('float32'))
+                model.invoke()
+                prediction = model.get_tensor(output_index)
+                predictions.append(prediction)
+
+            predictions = np.squeeze(np.asarray(predictions), axis=1)
+        # Predict for h5py model
+        else:
+            predictions = model.predict(tensors)
+            if self.target != 'combined':
+                predictions = np.hstack(predictions)
+
+
         predictions = target_scaler.inverse_transform(predictions)
 
         return predictions

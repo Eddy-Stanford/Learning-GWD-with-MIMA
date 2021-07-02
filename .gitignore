@@ -1,5 +1,7 @@
 /mlruns/*
 /runs/*
+*.pdf
+*.png
 .pre-commit-config.yaml
 /.vscode/*
 __pycache__/

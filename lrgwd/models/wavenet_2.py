@@ -7,36 +7,35 @@ from lrgwd.models.config import WAVENET_PARAMS
 from tensorflow.keras import regularizers
 from tensorflow.keras.layers import Dense, BatchNormalization
 
-tf.autograph.set_verbosity(3, True)
-
-def compile_model(model, learning_rate):
-    # Optimizer
-    adam_optimizer = tf.keras.optimizers.Adam(
-        learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False
-    )
-    model.compile(
-        # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
-        # RMSProp (reduces variation in steps)
-        optimizer=adam_optimizer,
-        loss=tf.keras.losses.LogCosh(reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="log_cosh"),
-        metrics=[
-            # Fits to Median: robust to unwanted outliers
-            tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
-            # # Fits to Mean: robust to wanted outliers
-            tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
-            # # Twice diferentiable, combination of MSE and MAE
-            tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
-            # # STD of residuals
-            tf.keras.metrics.RootMeanSquaredError(
-                name="root_mean_squared_error", dtype=None
-            )
-        ]
-    )
-    return model
 
 class Wavenet_2():
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
+
+    def compile_model(self, model, learning_rate):
+        # Optimizer
+        adam_optimizer = tf.keras.optimizers.Adam(
+            learning_rate=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-8, amsgrad=False
+        )
+        model.compile(
+            # Adam combines AdaGrad (exponentially weighted derivates- hyperparams B1 and B2)
+            # RMSProp (reduces variation in steps)
+            optimizer=adam_optimizer,
+            loss=tf.keras.losses.LogCosh(reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE, name="log_cosh"),
+            metrics=[
+                # Fits to Median: robust to unwanted outliers
+                tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
+                # # Fits to Mean: robust to wanted outliers
+                tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
+                # # Twice diferentiable, combination of MSE and MAE
+                tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
+                # # STD of residuals
+                tf.keras.metrics.RootMeanSquaredError(
+                    name="root_mean_squared_error", dtype=None
+                )
+            ]
+        )
+        return model
 
     def build(self,
               input_shape: Tuple[int] = (122, ), # 40*3 + 2
@@ -63,11 +62,11 @@ class Wavenet_2():
             metrics=[
                 # Fits to Median: robust to unwanted outliers
                 tf.keras.metrics.MeanAbsoluteError(name="mean_absolute_error", dtype=None),
-                # # Fits to Mean: robust to wanted outliers
+                # Fits to Mean: robust to wanted outliers
                 tf.keras.metrics.MeanSquaredError(name="mean_squared_error", dtype=None),
-                # # Twice diferentiable, combination of MSE and MAE
+                # Twice diferentiable, combination of MSE and MAE
                 tf.keras.metrics.LogCoshError(name="logcosh", dtype=None),
-                # # STD of residuals
+                # STD of residuals
                 tf.keras.metrics.RootMeanSquaredError(
                     name="root_mean_squared_error", dtype=None
                 )

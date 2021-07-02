@@ -4,9 +4,9 @@ from typing import Any, Dict, Union
 import numpy as np
 import pandas as pd
 from lrgwd.extractor.config import GWFU_FN, GWFV_FN, LABELS_FN, TENSORS_FN
-from lrgwd.split.config import (TEST_GWFU_FN, TEST_GWFV_FN, TEST_LABELS_FN,
-                                TEST_TENSORS_FN, TRAIN_GWFU_FN, TRAIN_GWFV_FN,
-                                TRAIN_LABELS_FN, TRAIN_TENSORS_FN, VAL_GWFU_FN,
+from lrgwd.split.config import (TEST_COMBINED_FN, TEST_GWFU_FN, TEST_GWFV_FN, TEST_LABELS_FN,
+                                TEST_TENSORS_FN, TRAIN_COMBINED_FN, TRAIN_GWFU_FN, TRAIN_GWFV_FN,
+                                TRAIN_LABELS_FN, TRAIN_TENSORS_FN, VAL_COMBINED_FN, VAL_GWFU_FN,
                                 VAL_GWFV_FN, VAL_LABELS_FN, VAL_TENSORS_FN)
 from lrgwd.split.scaler import Scaler
 from lrgwd.utils.io import from_pickle, to_pickle
@@ -20,16 +20,19 @@ class Splitter():
         self.train_labels_path = os.path.join(save_path, TRAIN_LABELS_FN)
         self.train_gwfu_path = os.path.join(save_path, TRAIN_GWFU_FN)
         self.train_gwfv_path = os.path.join(save_path, TRAIN_GWFV_FN)
+        self.train_combined_path = os.path.join(save_path, TRAIN_COMBINED_FN)
 
         self.val_tensors_path = os.path.join(save_path, VAL_TENSORS_FN)
         self.val_labels_path = os.path.join(save_path, VAL_LABELS_FN)
         self.val_gwfu_path = os.path.join(save_path, VAL_GWFU_FN)
         self.val_gwfv_path = os.path.join(save_path, VAL_GWFV_FN)
+        self.val_combined_path = os.path.join(save_path, VAL_COMBINED_FN)
 
         self.test_tensors_path = os.path.join(save_path, TEST_TENSORS_FN)
         self.test_labels_path = os.path.join(save_path, TEST_LABELS_FN)
         self.test_gwfu_path = os.path.join(save_path, TEST_GWFU_FN)
         self.test_gwfv_path = os.path.join(save_path, TEST_GWFV_FN)
+        self.test_combined_path = os.path.join(save_path, TEST_COMBINED_FN)
 
         self.include_train_header = True
         self.include_val_header = True
@@ -42,12 +45,14 @@ class Splitter():
         tensors: pd.DataFrame,
         gwfu: pd.DataFrame,
         gwfv: pd.DataFrame,
+        combined: pd.DataFrame,
         labels: pd.DataFrame = None
     ):
         tensors.to_csv(self.train_tensors_path, mode='a', header=self.include_train_header, index=False)
         if not self.skip_labels:
             gwfu.to_csv(self.train_gwfu_path, mode='a', header=self.include_train_header, index=False)
             gwfv.to_csv(self.train_gwfv_path, mode='a', header=self.include_train_header, index=False)
+            combined.to_csv(self.train_combined_path, mode='a', header=self.include_train_header, index=False)
         if labels != None: labels.to_csv(self.train_labels_path, mode='a', header=self.include_train_header, index=False)
         self.include_train_header = False
 
@@ -56,12 +61,14 @@ class Splitter():
         tensors: pd.DataFrame,
         gwfu: pd.DataFrame,
         gwfv: pd.DataFrame,
+        combined: pd.DataFrame,
         labels: pd.DataFrame = None
     ):
         tensors.to_csv(self.val_tensors_path, mode='a', header=self.include_val_header, index=False)
         if not self.skip_labels:
             gwfu.to_csv(self.val_gwfu_path, mode='a', header=self.include_val_header, index=False)
             gwfv.to_csv(self.val_gwfv_path, mode='a', header=self.include_val_header, index=False)
+            combined.to_csv(self.val_combined_path, mode='a', header=self.include_val_header, index=False)
         if labels != None: labels.to_csv(self.val_labels_path, mode='a', header=self.include_val_header, index=False)
         self.include_val_header = False
 
@@ -70,11 +77,13 @@ class Splitter():
         tensors: pd.DataFrame,
         gwfu: pd.DataFrame,
         gwfv: pd.DataFrame,
+        combined: pd.DataFrame,
         labels: pd.DataFrame = None
     ):
         tensors.to_csv(self.test_tensors_path, mode='a', header=self.include_test_header, index=False)
         gwfu.to_csv(self.test_gwfu_path, mode='a', header=self.include_test_header, index=False)
         gwfv.to_csv(self.test_gwfv_path, mode='a', header=self.include_test_header, index=False)
+        combined.to_csv(self.test_combined_path, mode='a', header=self.include_test_header, index=False)
         if labels != None: labels.to_csv(self.test_labels_path, mode='a', header=self.include_test_header, index=False)
         self.include_test_header = False
 
@@ -124,6 +133,7 @@ def split(
             "num_test_samples": num_test_samples,
             "num_val_samples": num_val_samples,
             "num_train_samples": num_train_samples,
+            "combined_shape": (66,)
         }
     )
 
@@ -138,23 +148,28 @@ def split(
         # pd.read_csv(labels_path, chunksize=batch_size),
     ), "splitting"):
 
+        combined=pd.concat([gwfu_chunk,gwfv_chunk], axis=1)
+
         if num_read < num_train_samples:
             splitter.save_train(
                 tensors=tensor_chunk,
                 gwfu=gwfu_chunk,
                 gwfv=gwfv_chunk,
+                combined=combined,
                 # labels=labels_chunk
             )
             scaler.partial_fit(
                 tensors=tensor_chunk,
                 gwfu=gwfu_chunk,
                 gwfv=gwfv_chunk,
+                combined=combined,
             )
         elif num_train_samples <= num_read and num_read < (num_train_samples + num_val_samples):
             splitter.save_val(
                 tensors=tensor_chunk,
                 gwfu=gwfu_chunk,
                 gwfv=gwfv_chunk,
+                combined=combined,
                 # labels=labels_chunk
             )
         else:
@@ -162,6 +177,7 @@ def split(
                 tensors=tensor_chunk,
                 gwfu=gwfu_chunk,
                 gwfv=gwfv_chunk,
+                combined=combined,
                 # labels=labels_chunk
             )
 

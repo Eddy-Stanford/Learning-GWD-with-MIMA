@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from lrgwd.split.config import GWFU_SCALER_FN, GWFV_SCALER_FN, TENSORS_SCALER_FN
+from lrgwd.split.config import GWFU_SCALER_FN, GWFV_SCALER_FN, TENSORS_SCALER_FN, COMBINED_SCALER_FN
 from lrgwd.utils.io import from_pickle
 
 
@@ -18,26 +18,31 @@ class Scaler():
             self.tensors_scaler = from_pickle(os.path.join(scaler["path"], TENSORS_SCALER_FN))
             self.gwfu_scaler = from_pickle(os.path.join(scaler["path"], GWFU_SCALER_FN))
             self.gwfv_scaler = from_pickle(os.path.join(scaler["path"], GWFV_SCALER_FN))
+            self.combined_scaler = from_pickle(os.path.join(scaler["path"], COMBINED_SCALER_FN)) # gwfu + gwfv
         else:
             self.tensors_scaler = StandardScaler()
             self.gwfu_scaler = StandardScaler()
             self.gwfv_scaler = StandardScaler()
+            self.combined_scaler = StandardScaler()
 
     def partial_fit(
         self,
         tensors: pd.DataFrame,
         gwfu: pd.DataFrame,
         gwfv: pd.DataFrame,
+        combined: pd.DataFrame,
     ) -> None:
         self.tensors_scaler.partial_fit(tensors)
         self.gwfu_scaler.partial_fit(gwfu)
         self.gwfv_scaler.partial_fit(gwfv)
+        self.combined_scaler.partial_fit(combined)
 
 
     def save(self):
         dump(self.tensors_scaler, open(os.path.join(self.save_path, TENSORS_SCALER_FN), "wb"))
         dump(self.gwfu_scaler, open(os.path.join(self.save_path, GWFU_SCALER_FN), "wb"))
         dump(self.gwfv_scaler, open(os.path.join(self.save_path, GWFV_SCALER_FN), "wb"))
+        dump(self.combined_scaler, open(os.path.join(self.save_path, COMBINED_SCALER_FN), "wb"))
 
 
     def transform(
@@ -45,7 +50,9 @@ class Scaler():
         tensors: pd.DataFrame,
         gwfu: pd.DataFrame,
         gwfv: pd.DataFrame,
+        combined: pd.DataFrame,
     ):
         self.tensors_scaler.transform(tensors)
         self.gwfu_scaler.transform(gwfu)
         self.gwfv_scaler.transform(gwfv)
+        self.combined_scaler.transform(combined)

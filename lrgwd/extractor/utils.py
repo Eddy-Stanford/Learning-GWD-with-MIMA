@@ -145,6 +145,7 @@ def vectorized_extract_tensors(
 
     logger.info(f"Pasting files together {paste_command}")
     os.system(paste_command + " -d ',' > " + os.path.join(save_path, "tensors.csv"))
+    os.system("paste gwfu.csv gwfv.csv" + " -d ',' > " + os.path.join(save_path, "combined.csv"))
 
 
 

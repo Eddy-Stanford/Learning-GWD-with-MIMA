@@ -6,6 +6,8 @@ import click
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+
 from lrgwd.performance.config import DEFAULTS
 from lrgwd.performance.evaluate.utils import (EvaluationPackage,
                                               generate_metrics)
@@ -94,6 +96,7 @@ python lrgwd evaluate \
 )
 @click.option("--verbose/--no-verbose", default=True)
 @click.option("--visualize/--no-visualize", default=True)
+@click.option("--use-tflite/--no-use-tflite", default=False)
 def main(**params):
     """
     Evaluate Model
@@ -108,9 +111,14 @@ def main(**params):
 
         # Load Model
         if params["verbose"]: logger.info("Loading Model")
-        model = keras.models.load_model(os.path.join(params["model_path"]), compile=False)
-        model.compile(loss="logcosh", optimizer="adam")
-        model.summary()
+        if not params["use_tflite"]:
+            model = keras.models.load_model(os.path.join(params["model_path"]), compile=False)
+            model.compile(loss="logcosh", optimizer="adam")
+            model.summary()
+        else:
+            model = tf.lite.Interpreter(model_path=params["model_path"])
+            model.allocate_tensors()
+
 
         # Load Test Data
         if params["verbose"]: logger.info("Loading Data and Making Predictions")
@@ -123,7 +131,9 @@ def main(**params):
             save_path=params["save_path"],
             model=model,
             evaluate_with_random=params["evaluate_with_random"],
+            use_tflite=params["use_tflite"]
         )
+
 
         # Visualize and Metrics
         if params["verbose"]: logger.info("Generate Metrics")
@@ -134,6 +144,7 @@ def main(**params):
             plevel_targets=evaluation_package.plevel_targets,
             save_path=params["save_path"],
         )
+
 
         if params["visualize"]:
             if params["verbose"]: logger.info("Visualize")

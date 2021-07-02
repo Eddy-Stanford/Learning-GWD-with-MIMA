@@ -3,7 +3,7 @@ import os
 import click
 from lrgwd.train.config import DEFAULTS
 from lrgwd.train.utils import (DataGenerator, get_callbacks, get_metadata,
-                               get_model, load_model)
+                               get_model, load_model, optimize_model)
 from lrgwd.utils.io import from_pickle
 from lrgwd.utils.logger import logger
 from lrgwd.utils.tracking import tracking
@@ -105,10 +105,11 @@ Trains the model outlined in baseline.
     "--train-with-random/--no-train-with-random",
     default=False,
     show_default=True,
-    help="Train with noraml random tensors loc=0.0 and scale=1.0"
+    help="Train with normal random tensors loc=0.0 and scale=1.0"
 )
 @click.option("--use-multiprocessing/--no-use-multiprocessing", default=True)
 @click.option("--verbose/--no-verbose", default=True)
+@click.option("--optimize/--no-optimize", default=False, help="Prune and Quantize model. Depending on need, expand optimization into self-contained module.")
 def main(**params):
     """
     Train Model
@@ -123,11 +124,17 @@ def main(**params):
         os.makedirs(params["save_path"], exist_ok=True)
         metadata = get_metadata(params["source_path"][0])
 
+        # TODO (minor): refactor this so metadata is stored with models
+        output_shape = metadata["output_shape"]
+        if params["model"] == "wavenet_2":
+            output_shape = metadata["combined_shape"]
+
         # Get Model
         if params["model_path"] is None:
             logger.info("Training new model")
             Model = get_model(params["model"])
-            model = Model.build((metadata["input_shape"],), metadata["output_shape"], params["learning_rate"])
+
+            model = Model.build((metadata["input_shape"],), output_shape, params["learning_rate"])
         else:
             model_path = params["model_path"]
             logger.info(f"Training model from {model_path}")
@@ -150,6 +157,7 @@ def main(**params):
             tensors_scaler=tensors_scaler,
             target_scaler=target_scaler,
             name="train",
+            num_outputs=output_shape[0],
             train_with_random=params["train_with_random"],
         )
 
@@ -162,10 +170,13 @@ def main(**params):
             tensors_scaler=tensors_scaler,
             target_scaler=target_scaler,
             name="val",
+            num_outputs=output_shape[0],
             train_with_random=params["train_with_random"],
         )
 
+
         # Fit Model
+        """
         callbacks = get_callbacks(params["save_path"], params["model"])
         history = model.fit(
             x=train_generator,
@@ -173,10 +184,26 @@ def main(**params):
             steps_per_epoch=params["steps_per_epoch"],
             validation_steps=params["validation_steps"],
             epochs=params["epochs"],
-            verbose=params["verbose"],
+            verbose=3, #params["verbose"],
             callbacks=callbacks,
             use_multiprocessing=params["use_multiprocessing"],
         )
+        """
+
+        if params["optimize"]:
+            optimize_model(
+                model=model,
+                save_path=params["save_path"],
+                model_name=params["model"],
+                train_generator=train_generator,
+                val_generator=val_generator,
+                steps_per_epoch=params["steps_per_epoch"],
+                val_steps=params["validation_steps"],
+                epochs=100,
+                end_step=100*params["batch_size"],
+                learning_rate=params["learning_rate"],
+
+            )
 
 
 if __name__ == "__main__":
