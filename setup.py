@@ -28,16 +28,16 @@ setup(
         'lrgwd.train',
         'lrgwd.performance.evaluate',
         'lrgwd.performance.compare',
+        'lrgwd.performance.shap',
+        'lrgwd.performance',
         'lrgwd.utils',
+        'lrgwd.models',
     ],
     entry_points="""
         [console_scripts]
         lrgwd=lrgwd.__main__.py:cli
     """,
-)
-
-"""
-install_requires=[Vjj
+    install_requires=[
         'mlflow',
         'scipy',
         'numpy',
@@ -46,5 +46,10 @@ install_requires=[Vjj
         'tqdm',
         'sklearn',
         'coloredlogs',
+        'seaborn',
+        'shap',
+        'ipython',
+        'click==7.1.2',
+        'tensorflow=2.1.0',
     ],
-"""
+)
