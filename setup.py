@@ -50,6 +50,7 @@ setup(
         'shap',
         'ipython',
         'click==7.1.2',
-        'tensorflow=2.1.0',
+        'tensorflow==2.1.0',
+        'h5py==2.10.0'
     ],
 )
