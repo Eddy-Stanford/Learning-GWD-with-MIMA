@@ -15,7 +15,7 @@ setup(
     version='0.0.1',
     description="Learning gravity wave drag with MiMA",
     long_description=long_description,
-    long_description_context_type='test/markdown',
+    long_description_context_type="test/markdown",
     url='https://github.com/zacespinosa/Learning-GWD-with-MIMA',
     author='Zac Espinosa',
     author_email='zespinos@stanford.edu',
@@ -28,15 +28,16 @@ setup(
         'lrgwd.train',
         'lrgwd.performance.evaluate',
         'lrgwd.performance.compare',
+        'lrgwd.performance.shap',
+        'lrgwd.performance',
+        'lrgwd.utils',
+        'lrgwd.models',
     ],
     entry_points="""
         [console_scripts]
         lrgwd=lrgwd.__main__.py:cli
     """,
-)
-
-"""
-install_requires=[Vjj
+    install_requires=[
         'mlflow',
         'scipy',
         'numpy',
@@ -44,5 +45,12 @@ install_requires=[Vjj
         'matplotlib',
         'tqdm',
         'sklearn',
+        'coloredlogs',
+        'seaborn',
+        'shap',
+        'ipython',
+        'click==7.1.2',
+        'tensorflow==2.1.0',
+        'h5py==2.10.0'
     ],
-"""
+)
